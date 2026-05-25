@@ -46,7 +46,7 @@ function HomeContent() {
     const timer = setTimeout(() => {
       const filtered = allArtworks.filter(art =>
         art.title.toLowerCase().includes(query) ||
-        art.tags.some(tag => tag.toLowerCase().includes(query))
+        art.tags?.some(tag => tag.name.toLowerCase().includes(query))
       );
       setFilteredArtworks(filtered);
       setIsLoading(false);
@@ -65,7 +65,7 @@ function HomeContent() {
           setFilteredArtworks(prev => {
             const newArtworks = allArtworks.map(art => ({
               ...art,
-              id: `${art.id}-${prev.length}`,
+              id: art.id + prev.length * 1000,
             }));
             return [...prev, ...newArtworks];
           });

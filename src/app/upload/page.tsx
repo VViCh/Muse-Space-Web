@@ -1,41 +1,90 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function UploadPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImagePreview(URL.createObjectURL(file));
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setImagePreview(URL.createObjectURL(selectedFile));
       setShowSuccess(false);
+      setError(null);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imagePreview) {
-      alert('Please select an artwork file first.');
+    if (!isAuthenticated) {
+      router.push('/login');
       return;
     }
     
-    // Mock submission
-    setShowSuccess(true);
+    if (!file) {
+      setError('Please select an artwork file first.');
+      return;
+    }
     
-    // Reset form
-    setImagePreview(null);
-    setTitle('');
-    setDescription('');
-    setTags('');
-    
-    // Hide success message after 3 seconds
-    setTimeout(() => setShowSuccess(false), 3000);
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('Title', title);
+      formData.append('Description', description);
+      formData.append('MediaFile', file);
+      
+      const tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+      tagArray.forEach((t, i) => formData.append(`Tags[${i}]`, t));
+
+      const response = await api.post('/artwork', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        setShowSuccess(true);
+        setFile(null);
+        setImagePreview(null);
+        setTitle('');
+        setDescription('');
+        setTags('');
+        
+        setTimeout(() => {
+          setShowSuccess(false);
+          router.push('/');
+        }, 3000);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to upload artwork. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (authLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (!isAuthenticated) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold dark:text-white mb-4">Sign in to upload artwork</h2>
+        <button onClick={() => router.push('/login')} className="bg-indigo-600 text-white px-6 py-2 rounded-xl">Sign In</button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto animate-[fadeIn_0.3s_ease-out]">
@@ -44,7 +93,14 @@ export default function UploadPage() {
       {showSuccess && (
         <div className="mb-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl flex items-center gap-3 animate-[fadeIn_0.3s_ease-out]">
           <span className="material-symbols-outlined text-emerald-400">check_circle</span>
-          <p className="text-emerald-400 font-medium">Artwork submitted successfully!</p>
+          <p className="text-emerald-400 font-medium">Artwork submitted successfully! Redirecting...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl flex items-center gap-3 animate-[fadeIn_0.3s_ease-out]">
+          <span className="material-symbols-outlined text-red-400">error</span>
+          <p className="text-red-400 font-medium">{error}</p>
         </div>
       )}
 
@@ -116,9 +172,11 @@ export default function UploadPage() {
         <div className="pt-4 flex justify-end">
           <button 
             type="submit" 
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all hover:scale-105"
+            disabled={isSubmitting || !file || !title}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100 flex items-center gap-2"
           >
-            Submit Artwork
+            {isSubmitting ? <span className="material-symbols-outlined animate-spin">refresh</span> : null}
+            {isSubmitting ? 'Uploading...' : 'Submit Artwork'}
           </button>
         </div>
       </form>

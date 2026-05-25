@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useArtwork, type Artwork } from '../context/ArtworkContext';
+import CommentSection from './CommentSection';
 
 interface ArtworkDetailModalProps {
   artwork: Artwork;
@@ -11,7 +12,7 @@ interface ArtworkDetailModalProps {
 export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailModalProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { likedArtworks, savedArtworks, followedArtists, toggleLike, toggleSave, toggleFollow } = useArtwork();
+  const { toggleLike, toggleSave, toggleFollow } = useArtwork();
   const [isCopied, setIsCopied] = useState(false);
 
   const handleShare = () => {
@@ -41,7 +42,7 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
         {/* Image Section */}
         <div className="lg:w-2/3 bg-black flex items-center justify-center p-2">
           <img
-            src={artwork.imageUrl}
+            src={artwork.contentUrl || artwork.thumbnailUrl}
             alt={artwork.title}
             className="max-w-full max-h-[80vh] object-contain shadow-2xl"
             onContextMenu={(e) => e.preventDefault()}
@@ -51,44 +52,49 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
         {/* Sidebar Details Section */}
         <div className="lg:w-1/3 p-8 flex flex-col bg-white dark:bg-slate-900">
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
-              {artwork.artist.charAt(0)}
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl overflow-hidden">
+              {artwork.creatorProfileImageUrl ? (
+                <img src={artwork.creatorProfileImageUrl} alt={artwork.creatorUsername} className="w-full h-full object-cover" />
+              ) : (
+                artwork.creatorUsername?.charAt(0) || 'A'
+              )}
             </div>
             <div>
               <h3 
                 className="font-bold text-xl dark:text-white cursor-pointer hover:text-indigo-500 transition-colors"
                 onClick={() => {
                   onClose();
-                  router.push(`/profile/${encodeURIComponent(artwork.artist)}`);
+                  router.push(`/profile/${encodeURIComponent(artwork.creatorUsername)}`);
                 }}
               >
-                {artwork.artist}
+                {artwork.creatorUsername}
               </h3>
               <button 
-                onClick={() => toggleFollow(artwork.artist)}
+                onClick={() => toggleFollow(artwork.creatorId)}
                 className={`font-medium text-sm transition-colors mt-1 ${
-                  followedArtists[artwork.artist] 
+                  artwork.isFollowingCreator 
                     ? 'text-slate-500 dark:text-slate-400' 
                     : 'text-indigo-500 hover:underline'
                 }`}
               >
-                {followedArtists[artwork.artist] ? 'Following' : 'Follow'}
+                {artwork.isFollowingCreator ? 'Following' : 'Follow'}
               </button>
             </div>
           </div>
 
           <h2 className="text-3xl font-bold dark:text-white mb-4 leading-tight">{artwork.title}</h2>
+          {artwork.description && <p className="text-slate-600 dark:text-slate-400 mb-6">{artwork.description}</p>}
           <div className="flex flex-wrap gap-2 mb-8">
-            {artwork.tags.map(tag => (
+            {artwork.tags?.map(tag => (
               <span 
-                key={tag} 
+                key={tag.id} 
                 onClick={() => {
                   onClose();
-                  router.push(`/?q=${encodeURIComponent(tag)}`);
+                  router.push(`/?q=${encodeURIComponent(tag.name)}`);
                 }}
                 className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 rounded-full text-sm font-semibold cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
               >
-                #{tag}
+                #{tag.name}
               </span>
             ))}
           </div>
@@ -97,12 +103,12 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
             <button 
               onClick={() => toggleLike(artwork.id)}
               className={`py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
-                likedArtworks[artwork.id]
+                artwork.isLiked
                   ? 'bg-[#FF2257] text-white'
                   : 'bg-[#1e293b] text-white'
               }`}
             >
-              {likedArtworks[artwork.id] ? (
+              {artwork.isLiked ? (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                   <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
                 </svg>
@@ -116,12 +122,12 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
             <button 
               onClick={() => toggleSave(artwork.id)}
               className={`py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
-                savedArtworks[artwork.id]
+                artwork.isBookmarked
                   ? 'bg-[#845EF7] text-white'
                   : 'bg-[#1e293b] text-white'
               }`}
             >
-              {savedArtworks[artwork.id] ? (
+              {artwork.isBookmarked ? (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                   <path fillRule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clipRule="evenodd" />
                 </svg>
@@ -146,6 +152,9 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
               {isCopied ? 'Copied' : t('artwork.action_share', 'Share')}
             </button>
           </div>
+
+          {/* Comments Section */}
+          <CommentSection artworkId={artwork.id} />
         </div>
       </div>
     </div>

@@ -1,63 +1,106 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
-export interface Artwork {
-  id: number | string;
-  title: string;
-  artist: string;
-  tags: string[];
-  imageUrl: string;
+export interface Tag {
+  id: number;
+  name: string;
 }
 
-const DUMMY_IMAGES = [
-  'https://images.unsplash.com/photo-1614728263952-84ea256f9679?q=80&w=1000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=1000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1464802686167-b939a6910659?q=80&w=1000&auto=format&fit=crop',
-];
-
-const INITIAL_ARTWORKS: Artwork[] = [
-  { id: 1, title: 'Ethereal Passage', artist: 'Lumina Void', tags: ['space', 'nebula'], imageUrl: DUMMY_IMAGES[0] },
-  { id: 2, title: 'Cosmic Dog', artist: 'Astro Creativ', tags: ['dog', 'stars'], imageUrl: DUMMY_IMAGES[1] },
-  { id: 3, title: 'Neon Orbit', artist: 'Neon Dreams', tags: ['neon', 'cyberpunk'], imageUrl: DUMMY_IMAGES[2] },
-  { id: 4, title: 'Stellar Birth', artist: 'Lumina Void', tags: ['star', 'creation'], imageUrl: DUMMY_IMAGES[3] },
-  { id: 5, title: 'Galactic Hound', artist: 'Space Paws', tags: ['dog', 'galaxy'], imageUrl: DUMMY_IMAGES[4] },
-  { id: 6, title: 'Void Walker', artist: 'Nebula Dreams', tags: ['void', 'dark'], imageUrl: DUMMY_IMAGES[5] },
-];
+export interface Artwork {
+  id: number;
+  title: string;
+  description: string;
+  contentUrl: string;
+  thumbnailUrl: string;
+  mediaType: string;
+  creatorId: number;
+  creatorUsername: string;
+  creatorProfileImageUrl: string;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  isLiked: boolean;
+  isBookmarked: boolean;
+  isFollowingCreator: boolean;
+  tags: Tag[];
+}
 
 interface ArtworkContextType {
   artworks: Artwork[];
-  likedArtworks: Record<string, boolean>;
-  savedArtworks: Record<string, boolean>;
-  followedArtists: Record<string, boolean>;
-  toggleLike: (id: string | number) => void;
-  toggleSave: (id: string | number) => void;
-  toggleFollow: (artistName: string) => void;
+  isLoading: boolean;
+  fetchArtworks: () => Promise<void>;
+  toggleLike: (id: number) => Promise<void>;
+  toggleSave: (id: number) => Promise<void>;
+  toggleFollow: (artistId: number) => Promise<void>;
 }
 
 const ArtworkContext = createContext<ArtworkContextType | undefined>(undefined);
 
 export function ArtworkProvider({ children }: { children: ReactNode }) {
-  const [artworks] = useState<Artwork[]>(INITIAL_ARTWORKS);
-  const [likedArtworks, setLikedArtworks] = useState<Record<string, boolean>>({});
-  const [savedArtworks, setSavedArtworks] = useState<Record<string, boolean>>({});
-  const [followedArtists, setFollowedArtists] = useState<Record<string, boolean>>({});
+  const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
 
-  const toggleLike = (id: string | number) => {
-    setLikedArtworks((prev) => ({ ...prev, [id]: !prev[id] }));
+  const fetchArtworks = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch from Feed API (Home feed usually)
+      const response = await api.get('/feed/home');
+      // If it's a paginated response like ArtworkFeedResponse
+      if (response.data && response.data.items) {
+        setArtworks(response.data.items);
+      } else {
+        // Fallback or empty
+        setArtworks([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch artworks", error);
+      setArtworks([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const toggleSave = (id: string | number) => {
-    setSavedArtworks((prev) => ({ ...prev, [id]: !prev[id] }));
+  useEffect(() => {
+    fetchArtworks();
+  }, [isAuthenticated]); // Refetch if auth state changes (to get correct isLiked flags)
+
+  const toggleLike = async (id: number) => {
+    // Optimistic UI Update
+    setArtworks(prev => prev.map(art => art.id === id ? { ...art, isLiked: !art.isLiked, likeCount: art.isLiked ? art.likeCount - 1 : art.likeCount + 1 } : art));
+    try {
+      await api.post(`/interaction/like/${id}`);
+    } catch (e) {
+      // Revert on failure
+      setArtworks(prev => prev.map(art => art.id === id ? { ...art, isLiked: !art.isLiked, likeCount: art.isLiked ? art.likeCount - 1 : art.likeCount + 1 } : art));
+    }
   };
 
-  const toggleFollow = (artistName: string) => {
-    setFollowedArtists((prev) => ({ ...prev, [artistName]: !prev[artistName] }));
+  const toggleSave = async (id: number) => {
+    // Optimistic UI Update
+    setArtworks(prev => prev.map(art => art.id === id ? { ...art, isBookmarked: !art.isBookmarked } : art));
+    try {
+      await api.post(`/interaction/bookmark/${id}`);
+    } catch (e) {
+      // Revert
+      setArtworks(prev => prev.map(art => art.id === id ? { ...art, isBookmarked: !art.isBookmarked } : art));
+    }
+  };
+
+  const toggleFollow = async (artistId: number) => {
+    // Optimistic UI Update across all artworks by this artist
+    setArtworks(prev => prev.map(art => art.creatorId === artistId ? { ...art, isFollowingCreator: !art.isFollowingCreator } : art));
+    try {
+      await api.post(`/social/follow/${artistId}`);
+    } catch (e) {
+      // Revert
+      setArtworks(prev => prev.map(art => art.creatorId === artistId ? { ...art, isFollowingCreator: !art.isFollowingCreator } : art));
+    }
   };
 
   return (
-    <ArtworkContext.Provider value={{ artworks, likedArtworks, savedArtworks, followedArtists, toggleLike, toggleSave, toggleFollow }}>
+    <ArtworkContext.Provider value={{ artworks, isLoading, fetchArtworks, toggleLike, toggleSave, toggleFollow }}>
       {children}
     </ArtworkContext.Provider>
   );
