@@ -1,11 +1,13 @@
 "use client";
 import { useParams } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Masonry from 'react-masonry-css';
 import { useArtwork, type Artwork } from '@/context/ArtworkContext';
 import ArtworkCard from '@/components/ArtworkCard';
 import ArtworkDetailModal from '@/components/ArtworkDetailModal';
+import api from '@/lib/api';
+import { UserProfileResponse } from '@/app/search/page';
 
 const MASONRY_BREAKPOINTS = {
   default: 4,
@@ -18,20 +20,56 @@ const MASONRY_BREAKPOINTS = {
 
 export default function ProfilePage() {
   const params = useParams();
-  const artistName = Array.isArray(params?.username) ? params.username[0] : (params?.username as string);
-  const { artworks, followedArtists, toggleFollow } = useArtwork();
+  const username = Array.isArray(params?.username) ? params.username[0] : (params?.username as string);
+  const decodedUsername = username ? decodeURIComponent(username) : '';
+  
+  const { toggleFollow } = useArtwork();
 
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
+  
+  const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+  const [artistArtworks, setArtistArtworks] = useState<Artwork[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter artworks by the artist name in the URL
-  const artistArtworks = useMemo(() => {
-    if (!artistName) return [];
-    return artworks.filter(
-      (art) => art.artist.toLowerCase() === decodeURIComponent(artistName).toLowerCase()
-    );
-  }, [artworks, artistName]);
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProfile = async () => {
+      try {
+        // 1. Find user by username using Search API
+        const searchRes = await api.get(`/search?query=${encodeURIComponent(decodedUsername)}`);
+        const users: UserProfileResponse[] = searchRes.data?.data?.users || [];
+        const user = users.find(u => u.username.toLowerCase() === decodedUsername.toLowerCase());
+        
+        if (!user) {
+          if (isMounted) setError("Artist not found");
+          return;
+        }
 
-  const decodedArtistName = artistName ? decodeURIComponent(artistName) : 'Unknown Artist';
+        // 2. Fetch full profile and artworks
+        const [profileRes, artworksRes] = await Promise.all([
+          api.get(`/users/${user.userId}/profile`),
+          api.get(`/artwork/user/${user.userId}`)
+        ]);
+
+        if (isMounted) {
+          setProfile(profileRes.data?.data || user);
+          setArtistArtworks(artworksRes.data?.data?.items || []);
+        }
+      } catch (err) {
+        console.error("Failed to load profile", err);
+        if (isMounted) setError("Failed to load profile");
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    
+    if (decodedUsername) fetchProfile();
+  }, [decodedUsername]);
+
+  if (isLoading) return <div className="p-8 text-center text-slate-500">Loading profile...</div>;
+  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+  if (!profile) return <div className="p-8 text-center text-slate-500">Artist not found</div>;
 
   // Mock commission data
   const commissionInfo = {
@@ -73,45 +111,53 @@ export default function ProfilePage() {
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
         </div>
 
-        {/* Profile Info & Bio */}
         <div className="px-8 relative -mt-24 sm:-mt-28 flex flex-col sm:flex-row items-center sm:items-end gap-8 pb-10">
-          <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white dark:border-slate-900 overflow-hidden shadow-2xl bg-white shrink-0 z-10">
-            <img 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWmy5Q4ovxN33Th-UGPn98NuvbII0lCPqmH900zYzCXD2mP6WnfsQYg5CyX8rf4tFNtD3EAcK7_vZu3h2MU_Gzi_YsraaLm89EtjkvWOclLf5f7DaiQ6yFiTF5zMb4P_tGqBFSwGcuJdefW5lWWa40l0ig7vMzrnaymQADnuGMjTvqBGxuaz_Ds9JqY1j1zgLWtXElciJZpSH4VQ1En6cYqRdHG1FU-2qPyfeqf01eITZydAYUO7SFxaTcPpAabjipbkR5ZqVqdRs" 
-              alt={decodedArtistName} 
-              className="w-full h-full object-cover"
-            />
+          <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white dark:border-slate-900 overflow-hidden shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 z-10 text-white font-bold text-5xl">
+            {profile.profileImageUrl || profile.avatarUrl ? (
+              <img 
+                src={profile.profileImageUrl || profile.avatarUrl} 
+                alt={profile.username} 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              profile.username.charAt(0).toUpperCase()
+            )}
           </div>
           
           <div className="flex-1 text-center sm:text-left z-10 pt-4 sm:pt-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
-              <h1 className="text-4xl font-bold text-white font-['Space_Grotesk'] drop-shadow-md">
-                {decodedArtistName}
-              </h1>
+              <div>
+                <h1 className="text-4xl font-bold text-white font-['Space_Grotesk'] drop-shadow-md">
+                  {profile.username}
+                </h1>
+                {(profile.firstName || profile.lastName) && (
+                  <p className="text-slate-300 font-medium">{profile.firstName} {profile.lastName}</p>
+                )}
+              </div>
               
               {/* Primary CTA in Header */}
               <div className="flex gap-3 justify-center sm:justify-start">
                 <button 
-                  onClick={() => toggleFollow(decodedArtistName)}
+                  onClick={() => toggleFollow(profile.userId)}
                   className={`px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg text-sm ${
-                    followedArtists[decodedArtistName]
+                    profile.isFollowing
                       ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border border-white/30'
                       : 'bg-white text-indigo-600 hover:bg-slate-100'
                   }`}
                 >
-                  {followedArtists[decodedArtistName] ? 'Following' : 'Follow'}
+                  {profile.isFollowing ? 'Following' : 'Follow'}
                 </button>
               </div>
             </div>
             
             <p className="text-slate-200 text-sm sm:text-base max-w-3xl mb-4 text-shadow-sm leading-relaxed">
-              Digital Illustrator & Character Designer. I love bringing original characters to life with vibrant colors and expressive poses! Specialized in Anime and Semi-realism styles. Open for exciting projects.
+              {profile.bio || "Digital Illustrator & Character Designer. I love bringing original characters to life with vibrant colors and expressive poses!"}
             </p>
             
             <div className="flex justify-center sm:justify-start items-center gap-4 text-slate-300">
               <div className="flex items-center gap-1.5 text-sm font-medium bg-slate-800/50 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10">
-                <span className="text-yellow-400">⭐ 4.9</span>
-                <span>(120 Reviews)</span>
+                <span className="material-symbols-outlined text-[16px]">group</span>
+                <span>{profile.followerCount} Followers</span>
               </div>
             </div>
           </div>
@@ -220,7 +266,7 @@ export default function ProfilePage() {
                 <p className="text-slate-600 dark:text-slate-400">Choose a package that fits your needs.</p>
               </div>
               
-              <Link href={`/commissions/request/${encodeURIComponent(artistName || '')}`}
+              <Link href={`/commissions/request/${encodeURIComponent(profile.username)}`}
                 className="hidden md:flex px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 items-center gap-2"
               >
                 <span className="material-symbols-outlined text-base">shopping_cart_checkout</span>
@@ -245,7 +291,7 @@ export default function ProfilePage() {
             </div>
             
             {/* Mobile CTA */}
-            <Link href={`/commissions/request/${encodeURIComponent(artistName || '')}`}
+            <Link href={`/commissions/request/${encodeURIComponent(profile.username)}`}
               className="mt-6 md:hidden w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex justify-center items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">shopping_cart_checkout</span>
