@@ -4,19 +4,47 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { login } = useAuth();
   
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    router.push('/');
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.post('/auth/login', {
+        email: authEmail,
+        password: authPassword,
+      });
+
+      if (response.data?.success && response.data?.accessToken) {
+        login(response.data.accessToken, response.data.user);
+        router.push('/');
+      } else {
+        setError(response.data?.message || "Login failed");
+      }
+    } catch (err: any) {
+      if (err.response?.status === 403 && err.response?.data?.message?.includes("verify")) {
+        // Handle unverified email
+        sessionStorage.setItem('registerEmail', authEmail);
+        router.push('/verify-otp');
+      } else {
+        setError(err.response?.data?.message || "Invalid credentials.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -31,6 +59,7 @@ export default function LoginPage() {
       </div>
       
       <form onSubmit={handleLogin} className="space-y-5">
+        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Email</label>
           <input 
@@ -61,10 +90,10 @@ export default function LoginPage() {
         
         <button 
           type="submit"
-          disabled={!authEmail || !authPassword}
-          className="w-full py-3 mt-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100"
+          disabled={!authEmail || !authPassword || isLoading}
+          className="w-full py-3 mt-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100 flex justify-center items-center"
         >
-          Sign In
+          {isLoading ? <span className="material-symbols-outlined animate-spin">refresh</span> : 'Sign In'}
         </button>
         
         <div className="text-center mt-6">

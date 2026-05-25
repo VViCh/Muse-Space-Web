@@ -1,21 +1,84 @@
 "use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState, useRef, KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import api from '@/lib/api';
 
 export default function VerifyOtpPage() {
   const { t } = useTranslation();
   const router = useRouter();
   
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleChange = (element: HTMLInputElement, index: number) => {
+    if (isNaN(Number(element.value))) return false;
+
+    setOtp([...otp.map((d, idx) => (idx === index ? element.value : d))]);
+
+    // Focus next input
+    if (element.value !== '' && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      // Focus previous input on backspace if current is empty
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    if (otp.length === 6) {
-      // Simulate verification
-      router.push('/login');
+    const pastedData = e.clipboardData.getData('text').slice(0, 6).split('');
+    if (pastedData.some(char => isNaN(Number(char)))) return;
+
+    const newOtp = [...otp];
+    pastedData.forEach((char, index) => {
+      newOtp[index] = char;
+    });
+    setOtp(newOtp);
+
+    // Focus the last filled input or the very end
+    const lastIndex = Math.min(pastedData.length, 5);
+    inputRefs.current[lastIndex]?.focus();
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const otpValue = otp.join('');
+    if (otpValue.length === 6) {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Need to retrieve email that requested OTP (ideally from state, context, or session storage)
+        const email = sessionStorage.getItem('registerEmail');
+        if (!email) {
+          setError("Session expired. Please try registering again.");
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await api.post('/auth/verify-otp', {
+          email,
+          otpCode: otpValue,
+          type: "EmailVerification"
+        });
+
+        if (response.data?.success) {
+          router.push('/login');
+        } else {
+          setError(response.data?.message || "Verification failed");
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Something went wrong.");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -33,26 +96,40 @@ export default function VerifyOtpPage() {
         </p>
       </div>
       
+      {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+
       <form onSubmit={handleVerify} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 text-center">One-Time Password</label>
-          <input 
-            type="text" 
-            maxLength={6}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-            className="w-full text-center tracking-[0.5em] font-mono text-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-700"
-            placeholder="000000"
-            required
-          />
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 text-center">Enter One-Time Password</label>
+          <div className="flex justify-center gap-2" onPaste={handlePaste}>
+            {otp.map((data, index) => (
+              <input
+                className="w-12 h-14 text-center text-xl font-bold bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                type="text"
+                name="otp"
+                maxLength={1}
+                key={index}
+                value={data}
+                ref={(el) => { inputRefs.current[index] = el; }}
+                onChange={e => handleChange(e.target, index)}
+                onKeyDown={e => handleKeyDown(e, index)}
+                onFocus={e => e.target.select()}
+                required
+              />
+            ))}
+          </div>
         </div>
         
         <button 
           type="submit"
-          disabled={otp.length !== 6}
-          className="w-full py-3 mt-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100"
+          disabled={otp.join('').length !== 6 || isLoading}
+          className="w-full py-3 mt-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100 flex items-center justify-center gap-2"
         >
-          Verify OTP
+          {isLoading ? (
+            <span className="material-symbols-outlined animate-spin">refresh</span>
+          ) : (
+            'Verify OTP'
+          )}
         </button>
         
         <div className="text-center mt-6">
@@ -60,7 +137,18 @@ export default function VerifyOtpPage() {
             Didn't receive the code?{' '}
             <button 
               type="button"
-              className="text-indigo-400 hover:text-indigo-300 font-bold transition-colors"
+              className="text-indigo-500 hover:text-indigo-400 font-bold transition-colors"
+              onClick={async () => {
+                const email = sessionStorage.getItem('registerEmail');
+                if (email) {
+                  try {
+                    await api.post('/auth/otp/generate', { email, type: 'EmailVerification' });
+                    alert("OTP Resent to " + email);
+                  } catch (e) {
+                    alert("Failed to resend OTP");
+                  }
+                }
+              }}
             >
               Resend OTP
             </button>
