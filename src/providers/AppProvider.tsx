@@ -6,6 +6,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import i18n from 'i18next';
 import { initReactI18next, useTranslation } from 'react-i18next';
 import { ArtworkProvider } from '@/context/ArtworkContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { NotificationProvider, useNotifications } from '@/context/NotificationContext';
 
 // Import locales
 import enTranslation from '@/locales/en/translation.json';
@@ -71,6 +73,29 @@ export default function AppProvider({ children }: { children: ReactNode }) {
       </main>
     );
   }
+
+  return (
+    <AuthProvider>
+      <NotificationProvider>
+        <AppLayout>{children}</AppLayout>
+      </NotificationProvider>
+    </AuthProvider>
+  );
+}
+
+function AppLayout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  
+  const { user, isAuthenticated, logout } = useAuth();
+  const { notifications, unreadCount, markAsRead } = useNotifications();
+  const searchQuery = searchParams.get('q') || '';
 
   return (
     <>
@@ -166,7 +191,9 @@ export default function AppProvider({ children }: { children: ReactNode }) {
             }}
           >
             <span className="material-symbols-outlined">notifications</span>
-            <span className="absolute top-0 right-0 w-2 h-2 bg-indigo-500 rounded-full"></span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">{unreadCount}</span>
+            )}
           </button>
           
           {/* Notifications Dropdown */}
@@ -174,13 +201,31 @@ export default function AppProvider({ children }: { children: ReactNode }) {
             <div className="absolute top-12 right-12 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-indigo-500/30 rounded-xl shadow-2xl overflow-hidden z-50 animate-[fadeIn_0.2s_ease-out]">
               <div className="p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/50 flex justify-between items-center">
                 <h3 className="text-slate-900 dark:text-white font-bold font-['Space_Grotesk']">Notifications</h3>
-                <Link href="/notifications" className="text-xs text-indigo-500 hover:underline">View All</Link>
+                <Link href="/notifications" onClick={() => setShowNotifications(false)} className="text-xs text-indigo-500 hover:underline">View All</Link>
               </div>
-              <div className="max-h-96 overflow-y-auto">
-                <div className="p-4 border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
-                  <p className="text-sm text-slate-900 dark:text-white font-medium mb-1">New commission request</p>
-                  <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-2 uppercase tracking-wider">Just now</p>
-                </div>
+              <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                {notifications.length > 0 ? notifications.map(notif => (
+                  <div 
+                    key={notif.id} 
+                    onClick={() => {
+                      if (!notif.isRead) markAsRead(notif.id);
+                      if (notif.actionUrl) {
+                        router.push(notif.actionUrl);
+                        setShowNotifications(false);
+                      }
+                    }}
+                    className={`p-4 border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer ${notif.isRead ? 'opacity-70' : 'bg-indigo-50/50 dark:bg-indigo-500/10'}`}
+                  >
+                    <p className="text-sm text-slate-900 dark:text-white font-medium mb-1">{notif.message}</p>
+                    <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-2 uppercase tracking-wider">
+                      {new Date(notif.createdAtUtc).toLocaleString()}
+                    </p>
+                  </div>
+                )) : (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    No new notifications.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -199,19 +244,37 @@ export default function AppProvider({ children }: { children: ReactNode }) {
           {showProfileMenu && (
             <div className="absolute top-14 right-0 w-48 bg-white/90 dark:bg-slate-950/80 backdrop-blur-xl border border-slate-200 dark:border-indigo-500/30 rounded-xl shadow-2xl overflow-hidden z-50 animate-[fadeIn_0.2s_ease-out]">
               <div className="py-2">
-                <Link href="/login" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
-                  <span className="material-symbols-outlined text-[18px]">login</span> {t('layout.menu_signin', 'Sign In')}
-                </Link>
-                <Link href="/register" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
-                  <span className="material-symbols-outlined text-[18px]">person_add</span> {t('layout.menu_signup', 'Sign Up')}
-                </Link>
-                <div className="h-px bg-slate-200 dark:bg-white/10 my-1"></div>
-                <Link href="/settings" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
-                  <span className="material-symbols-outlined text-[18px]">settings</span> {t('layout.menu_settings', 'Settings')}
-                </Link>
-                <Link href="/admin" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
-                  <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span> Admin Panel
-                </Link>
+                {!isAuthenticated ? (
+                  <>
+                    <Link href="/login" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
+                      <span className="material-symbols-outlined text-[18px]">login</span> {t('layout.menu_signin', 'Sign In')}
+                    </Link>
+                    <Link href="/register" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
+                      <span className="material-symbols-outlined text-[18px]">person_add</span> {t('layout.menu_signup', 'Sign Up')}
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 mb-1 border-b border-slate-200 dark:border-white/10">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user?.username}</p>
+                      <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                    </div>
+                    <Link href="/profile" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
+                      <span className="material-symbols-outlined text-[18px]">person</span> Profile
+                    </Link>
+                    <Link href="/settings" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
+                      <span className="material-symbols-outlined text-[18px]">settings</span> {t('layout.menu_settings', 'Settings')}
+                    </Link>
+                    {/* Assuming admin role check here later if needed */}
+                    <Link href="/admin" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
+                      <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span> Admin Panel
+                    </Link>
+                    <div className="h-px bg-slate-200 dark:bg-white/10 my-1"></div>
+                    <button onClick={() => { logout(); setShowProfileMenu(false); }} className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-500 hover:text-red-700 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
+                      <span className="material-symbols-outlined text-[18px]">logout</span> Sign Out
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
