@@ -102,7 +102,7 @@ export default function GroupsPage() {
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-indigo-500 dark:text-indigo-400">event</span> {t('groups.events_title', 'Events')}
           </h2>
-          <Link href="/events" className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+          <Link href="/events/explore" className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
             View More
           </Link>
         </div>
