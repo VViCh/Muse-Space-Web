@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'react-hot-toast';
+
 
 export default function Settings() {
   const { i18n } = useTranslation();
@@ -69,12 +69,12 @@ export default function Settings() {
       });
       if (res.data?.success) {
         setIsAcceptingCommissions(!isAcceptingCommissions);
-        toast.success(res.data.message || 'Status updated');
+        alert(res.data.message || 'Status updated');
       } else {
-        toast.error(res.data?.message || 'Failed to update status');
+        alert(res.data?.message || 'Failed to update status');
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update status');
+      alert(err.response?.data?.message || 'Failed to update status');
     } finally {
       setIsTogglingCommissions(false);
     }
@@ -104,18 +104,6 @@ export default function Settings() {
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white font-['Space_Grotesk'] mb-2">Settings</h1>
           <p className="text-slate-600 dark:text-slate-400">Manage your preferences and profile.</p>
         </div>
-        
-        {/* Toggle for Demonstration Purposes */}
-        <button 
-          onClick={() => setIsAuthenticated(!isAuthenticated)}
-          className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors border ${
-            isAuthenticated 
-              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/50' 
-              : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
-          }`}
-        >
-          Test Mode: {isAuthenticated ? 'Signed In' : 'Guest'}
-        </button>
       </div>
 
       <div className="space-y-8">

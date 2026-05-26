@@ -1,6 +1,7 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import api from '@/lib/api';
 
 export default function GroupDetails() {
   const params = useParams();
@@ -10,42 +11,49 @@ export default function GroupDetails() {
 
   const router = useRouter();
 
-  // Dummy data
-  const [group, setGroup] = useState({
-    name: id === '1' ? "Digital Pioneers" : id === '2' ? "Abstract Visionaries" : "Pixel Perfect",
-    description: "A community for digital artists pushing boundaries and exploring new frontiers.",
-    members: 1205,
-    tags: ["3D Art", "Digital Painting", "Concept Art"],
-    requirements: "Must have at least 1 portfolio upload to post.",
-    rules: "1. Be respectful to all members.\n2. Do not spam or self-promote excessively.\n3. Keep critiques constructive.\n4. No AI-generated artwork allowed in the main feed.",
-    bannerUrl: id === '1' ? "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80" : id === '2' ? "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=1200&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&auto=format&fit=crop&q=80",
-    avatarUrl: id === '1' ? "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=150&auto=format&fit=crop&q=60" : id === '2' ? "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=150&auto=format&fit=crop&q=60" : "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=60",
-    role: "admin"
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [group, setGroup] = useState<any>(null);
+  const [posts, setPosts] = useState<any[]>([]);
 
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      author: "Neon Ninja",
-      time: "2 hours ago",
-      content: "Just finished this cyberpunk alleyway environment. Let me know what you think about the lighting!",
-      image: "https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=1000&auto=format&fit=crop",
-      likes: 24,
-      comments: 5,
-      userLiked: false,
-      userSaved: false
-    },
-    {
-      id: 2,
-      author: "Astro Creator",
-      time: "5 hours ago",
-      content: "Anyone doing the weekly challenge? I'm struggling to find references for zero-gravity liquids.",
-      likes: 12,
-      comments: 8,
-      userLiked: false,
-      userSaved: true
-    }
-  ]);
+  useEffect(() => {
+    const fetchGroupData = async () => {
+      try {
+        const [groupRes, postsRes] = await Promise.all([
+          api.get(`/groups/${id}`),
+          api.get(`/groups/${id}/posts`)
+        ]);
+        if (groupRes.data?.success) {
+          setGroup({
+            ...groupRes.data.data,
+            members: groupRes.data.data.memberCount || 0,
+            tags: ["3D Art", "Digital Painting", "Concept Art"],
+            requirements: "Must have at least 1 portfolio upload to post.",
+            rules: "1. Be respectful to all members.\n2. Do not spam or self-promote excessively.\n3. Keep critiques constructive.\n4. No AI-generated artwork allowed in the main feed.",
+            role: "member"
+          });
+        }
+        if (postsRes.data?.success) {
+          const items = postsRes.data.data.items || postsRes.data.data || [];
+          setPosts(items.map((p: any) => ({
+            id: p.id,
+            author: p.authorUsername || 'User',
+            time: new Date(p.createdAtUtc).toLocaleDateString(),
+            content: p.content,
+            image: undefined,
+            likes: 0,
+            comments: 0,
+            userLiked: false,
+            userSaved: false
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to load group", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (id) fetchGroupData();
+  }, [id]);
 
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -74,24 +82,31 @@ export default function GroupDetails() {
     setSettingsView('menu');
   };
 
-  const handlePostSubmit = () => {
+  const handlePostSubmit = async () => {
     if (!postText.trim() && !attachedImage) return;
     
-    const newPost = {
-      id: Date.now(),
-      author: "You",
-      time: "Just now",
-      content: postText,
-      image: attachedImage || undefined,
-      likes: 0,
-      comments: 0,
-      userLiked: false,
-      userSaved: false
-    };
-    
-    setPosts([newPost, ...posts]);
-    setPostText('');
-    setAttachedImage(null);
+    try {
+      const res = await api.post(`/groups/${id}/posts`, { content: postText });
+      if (res.data?.success) {
+        const p = res.data.data;
+        const newPost = {
+          id: p.id,
+          author: p.authorUsername || 'You',
+          time: p.createdAtUtc ? new Date(p.createdAtUtc).toLocaleDateString() : 'Just now',
+          content: p.content,
+          image: undefined,
+          likes: 0,
+          comments: 0,
+          userLiked: false,
+          userSaved: false
+        };
+        setPosts([newPost, ...posts]);
+        setPostText('');
+        setAttachedImage(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSavePost = (id: number) => {
@@ -132,6 +147,10 @@ export default function GroupDetails() {
     "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=500&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop"
   ];
+
+  if (isLoading || !group) {
+    return <div className="max-w-6xl mx-auto py-12 text-center text-slate-500">Loading group...</div>;
+  }
 
   return (
     <div className="max-w-6xl mx-auto pb-12">
@@ -183,7 +202,7 @@ export default function GroupDetails() {
             </p>
             
             <div className="flex flex-wrap gap-2 mb-6">
-              {group.tags.map((tag, idx) => (
+              {group.tags.map((tag: string, idx: number) => (
                 <span key={idx} onClick={() => alert(`Searching for #${tag}`)} className="px-3 py-1 bg-slate-200 dark:bg-white/5 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium cursor-pointer hover:bg-slate-300 dark:hover:bg-white/10 transition-colors">
                   #{tag}
                 </span>

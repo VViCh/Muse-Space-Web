@@ -1,6 +1,7 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import api from '@/lib/api';
 
 export default function DeliveryPage() {
   const { orderId } = useParams();
@@ -10,15 +11,39 @@ export default function DeliveryPage() {
   const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback] = useState('');
 
-  const orderDetails = {
-    id: orderId || 'ORD-9821-X',
-    artist: 'Lumina Void',
-    service: 'Cyberpunk Character Design',
-    artworkUrl: 'https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1200&auto=format&fit=crop'
-  };
+  const [orderDetails, setOrderDetails] = useState<any>(null);
 
-  const handleCompleteOrder = () => {
-    setIsCompleted(true);
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const res = await api.get(`/commissions/${orderId}`);
+        if (res.data?.success) {
+          setOrderDetails({
+            id: res.data.data.id,
+            artist: res.data.data.artistUsername,
+            service: res.data.data.title,
+            artworkUrl: 'https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1200&auto=format&fit=crop'
+          });
+          if (res.data.data.status === 5) {
+            setIsCompleted(true);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    if (orderId) fetchOrder();
+  }, [orderId]);
+
+  const handleCompleteOrder = async () => {
+    try {
+      const res = await api.patch(`/commissions/${orderId}/status`, { status: 5 }); // 5 = Completed
+      if (res.data?.success) {
+        setIsCompleted(true);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
@@ -46,11 +71,14 @@ export default function DeliveryPage() {
           <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-500 mb-4 tracking-tight">
             Final Delivery
           </h1>
-          <p className="text-slate-400 text-lg">Your commission from <span className="text-white font-bold">{orderDetails.artist}</span> is ready for review.</p>
+          <p className="text-slate-400 text-lg">
+            Your commission from <span className="text-white font-bold">{orderDetails?.artist || 'the artist'}</span> is ready for review.
+          </p>
         </div>
 
-        {/* Artwork Preview Area */}
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-violet-500/20 rounded-3xl p-4 md:p-8 shadow-[0_0_50px_rgba(139,92,246,0.1)] transition-all duration-500">
+        {orderDetails && (
+          <>
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-violet-500/20 rounded-3xl p-4 md:p-8 shadow-[0_0_50px_rgba(139,92,246,0.1)] transition-all duration-500">
           <div className="relative rounded-2xl overflow-hidden group border border-white/5 bg-black/50">
             <img 
               src={orderDetails.artworkUrl} 
@@ -175,6 +203,8 @@ export default function DeliveryPage() {
             </form>
           </div>
         </div>
+        </>
+        )}
 
       </div>
     </div>

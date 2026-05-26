@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import api from '@/lib/api';
 
 type PaymentState = 'checkout' | 'loading' | 'instruction' | 'success' | 'failure';
 
@@ -10,17 +11,28 @@ export default function PaymentPage() {
   const [selectedMethod, setSelectedMethod] = useState<string>('virtual_account');
   const [paymentState, setPaymentState] = useState<PaymentState>('checkout');
 
-  const orderDetails = {
-    id: orderId || 'ORD-9821-X',
-    artist: 'Astro Creativ',
-    service: 'Mecha Concept Art',
-    basePrice: 150.00,
-    addons: [
-      { name: 'Commercial Use (+50%)', price: 75.00 },
-      { name: 'Source File (.PSD)', price: 15.00 }
-    ],
-    total: 240.00
-  };
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const res = await api.get(`/commissions/${orderId}`);
+        if (res.data?.success) {
+          setOrderDetails({
+            id: res.data.data.id,
+            artist: res.data.data.artistUsername,
+            service: res.data.data.title,
+            basePrice: res.data.data.price,
+            addons: [],
+            total: res.data.data.price
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    if (orderId) fetchOrder();
+  }, [orderId]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -36,6 +48,23 @@ export default function PaymentPage() {
     e.preventDefault();
     setPaymentState('loading');
   };
+
+  const handleConfirmPayment = async () => {
+    try {
+      const res = await api.post(`/payments/${orderId}/confirm`);
+      if (res.data?.success) {
+        setPaymentState('success');
+      } else {
+        setPaymentState('failure');
+      }
+    } catch (err) {
+      setPaymentState('failure');
+    }
+  };
+
+  if (!orderDetails) {
+    return <div className="min-h-screen flex items-center justify-center">Loading payment details...</div>;
+  }
 
   const renderCheckout = () => (
     <div className="bg-white/90 dark:bg-[#0B1120]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-8 lg:p-10 shadow-2xl flex flex-col relative h-full">
@@ -189,7 +218,7 @@ export default function PaymentPage() {
 
       <div className="mt-auto space-y-3">
         <button 
-          onClick={() => setPaymentState(Math.random() > 0.3 ? 'success' : 'failure')} 
+          onClick={handleConfirmPayment} 
           className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98]"
         >
           Cek Status Pembayaran
@@ -224,7 +253,7 @@ export default function PaymentPage() {
       </div>
 
       <button 
-        onClick={() => router.push(`/workspace/${orderDetails.id}`)} 
+        onClick={() => router.push(`/commissions/${orderDetails.id}`)} 
         className="w-full mt-auto py-5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-black text-lg tracking-wide shadow-[0_0_30px_rgba(79,70,229,0.4)] transition-all hover:-translate-y-1"
       >
         Masuk ke Workspace Chat
@@ -311,7 +340,7 @@ export default function PaymentPage() {
               <span>Base Price</span>
               <span className="font-mono">${orderDetails.basePrice.toFixed(2)}</span>
             </div>
-            {orderDetails.addons.map((addon, idx) => (
+            {orderDetails.addons.map((addon: any, idx: number) => (
               <div key={idx} className="flex justify-between items-center text-slate-500 dark:text-slate-400">
                 <span>+ {addon.name}</span>
                 <span className="font-mono">${addon.price.toFixed(2)}</span>

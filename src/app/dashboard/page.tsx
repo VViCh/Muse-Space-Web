@@ -33,6 +33,7 @@ export default function Dashboard() {
   const [commissions, setCommissions] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
+  const [userArtworks, setUserArtworks] = useState<any[]>([]);
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -43,14 +44,16 @@ export default function Dashboard() {
         const statsRes = await api.get('/dashboard/stats');
         if (statsRes.data?.success) setStats(statsRes.data.data);
 
-        const [commsRes, eventsRes, groupsRes] = await Promise.all([
+        const [commsRes, eventsRes, groupsRes, userArtworksRes] = await Promise.all([
           api.get('/commissions/requested'),
           api.get('/events'),
-          api.get('/groups')
+          api.get('/groups'),
+          api.get(`/artwork/user/${user?.id || 0}`)
         ]);
         if (commsRes.data?.success) setCommissions(commsRes.data.data.items || []);
         if (eventsRes.data?.success) setEvents(eventsRes.data.data.items || eventsRes.data.data || []);
         if (groupsRes.data?.success) setGroups(groupsRes.data.data.items || groupsRes.data.data || []);
+        if (userArtworksRes.data?.success) setUserArtworks(userArtworksRes.data.data.items || userArtworksRes.data.data || []);
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       }
@@ -72,12 +75,9 @@ export default function Dashboard() {
     }
   }, [searchParams, router]);
 
-  const displayedArtworks = artworks.filter(art => {
-    if (collectionTab === 'my_artworks') {
-      return art.creatorId === user?.id;
-    }
-    return collectionTab === 'liked' ? art.isLiked : art.isBookmarked;
-  });
+  const displayedArtworks = collectionTab === 'my_artworks' 
+    ? userArtworks 
+    : artworks.filter(art => collectionTab === 'liked' ? art.isLiked : art.isBookmarked);
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-12">
