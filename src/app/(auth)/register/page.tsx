@@ -32,6 +32,7 @@ export default function RegisterPage() {
         email: authEmail,
         username: authUsername,
         password: authPassword,
+        confirmPassword: authConfirmPassword,
         firstName: authUsername, // Map simple username to names if needed, backend requires it
         lastName: "Artist"
       });
