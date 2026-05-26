@@ -7,6 +7,8 @@ import ArtworkCard from '@/components/ArtworkCard';
 import ArtworkDetailModal from '@/components/ArtworkDetailModal';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 const MASONRY_BREAKPOINTS = {
   default: 4,
@@ -34,12 +36,35 @@ const MY_COMMISSIONS = [
 
 export default function Dashboard() {
 
-  const { artworks, likedArtworks, savedArtworks } = useArtwork();
+  const { artworks } = useArtwork();
+  const { user } = useAuth();
   const [selectedArtwork, setSelectedArtwork] = useState<any>(null);
   const [collectionTab, setCollectionTab] = useState<'my_artworks' | 'liked' | 'saved'>('my_artworks');
   const [showTicketModal, setShowTicketModal] = useState<any>(null);
+  
+  const [stats, setStats] = useState<any>(null);
+  const [commissions, setCommissions] = useState<any[]>([]);
+  
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const statsRes = await api.get('/dashboard/stats');
+        if (statsRes.data?.success) setStats(statsRes.data.data);
+
+        const commsRes = await api.get('/commissions/requested');
+        if (commsRes.data?.success) setCommissions(commsRes.data.data.items || []);
+      } catch (err) {
+        console.error('Failed to load dashboard data', err);
+      }
+    };
+
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (searchParams.get('ticket') === 'true' && MY_EVENTS.length > 0) {
@@ -48,26 +73,46 @@ export default function Dashboard() {
       // Remove query param to clean URL
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.delete('ticket');
-      router.replace("?$($newParams.toString())");
+      router.replace(`?${newParams.toString()}`);
     }
   }, [searchParams, router]);
 
   const displayedArtworks = artworks.filter(art => {
     if (collectionTab === 'my_artworks') {
-      // Mocking user's own artworks by picking a few specific ones
-      return art.id === 1 || art.id === 5 || art.id === 9;
+      return art.creatorId === user?.id;
     }
-    return collectionTab === 'liked' ? likedArtworks[art.id] : savedArtworks[art.id];
+    return collectionTab === 'liked' ? art.isLiked : art.isBookmarked;
   });
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-12">
       <div className="flex justify-between items-end border-b border-slate-200 dark:border-white/10 pb-6">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white font-['Space_Grotesk'] mb-2">My Activities</h1>
-          <p className="text-slate-600 dark:text-slate-400">Manage your event tickets, groups, and commission requests in one place.</p>
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white font-['Space_Grotesk'] mb-2">My Dashboard</h1>
+          <p className="text-slate-600 dark:text-slate-400">Manage your metrics, commissions, and activities.</p>
         </div>
       </div>
+
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white/50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-white/10">
+            <p className="text-slate-500 text-sm font-bold uppercase mb-2">Total Views</p>
+            <p className="text-3xl font-black text-slate-900 dark:text-white font-['Space_Grotesk']">{stats.totalViews}</p>
+          </div>
+          <div className="bg-white/50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-white/10">
+            <p className="text-slate-500 text-sm font-bold uppercase mb-2">Total Likes</p>
+            <p className="text-3xl font-black text-slate-900 dark:text-white font-['Space_Grotesk']">{stats.totalLikes}</p>
+          </div>
+          <div className="bg-white/50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-white/10">
+            <p className="text-slate-500 text-sm font-bold uppercase mb-2">Followers</p>
+            <p className="text-3xl font-black text-slate-900 dark:text-white font-['Space_Grotesk']">{stats.totalFollowers}</p>
+          </div>
+          <div className="bg-white/50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-white/10">
+            <p className="text-slate-500 text-sm font-bold uppercase mb-2">Revenue</p>
+            <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-['Space_Grotesk']">${stats.totalRevenue}</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
@@ -153,7 +198,32 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {MY_COMMISSIONS.map((comm) => (
+                    {commissions.length > 0 ? commissions.map((comm) => (
+                      <tr key={comm.id} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                        <td className="p-4 font-bold text-slate-900 dark:text-white">{comm.artistUsername}</td>
+                        <td className="p-4 text-slate-600 dark:text-slate-300">Custom Request</td>
+                        <td className="p-4 text-slate-500 dark:text-slate-400 text-sm">{new Date(comm.createdAtUtc).toLocaleDateString()}</td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            comm.status === 'Accepted' || comm.status === 'InProgress' 
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
+                              : comm.status === 'Pending'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+                              : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                          }`}>
+                            <span className="material-symbols-outlined text-[14px]">
+                              {comm.status === 'Pending' ? 'pending' : comm.status === 'Completed' ? 'check_circle' : 'sync'}
+                            </span>
+                            {comm.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <Link href={`/commissions/${comm.id}`} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium text-sm transition-colors">
+                            View Thread
+                          </Link>
+                        </td>
+                      </tr>
+                    )) : MY_COMMISSIONS.map((comm) => (
                       <tr key={comm.id} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                         <td className="p-4 font-bold text-slate-900 dark:text-white">{comm.artist}</td>
                         <td className="p-4 text-slate-600 dark:text-slate-300">{comm.type}</td>

@@ -1,6 +1,8 @@
 "use client";
 import { useRouter, useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+import { UserProfileResponse } from '@/app/search/page';
 
 type Step = 'form' | 'waiting_approval' | 'payment' | 'success';
 
@@ -20,13 +22,60 @@ export default function RequestCommission() {
   const [deadline, setDeadline] = useState('');
   const [fileName, setFileName] = useState('');
 
-  const artistIdStr = Array.isArray(artistId) ? artistId[0] : artistId;
-  const artistName = artistIdStr?.replace('-', ' ') || 'the artist';
-  const decodedArtistName = artistName.split(' ').map((n: string) => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
+  const [artistIdStr] = Array.isArray(artistId) ? artistId : [artistId];
+  const decodedArtistName = artistIdStr ? decodeURIComponent(artistIdStr) : '';
+
+  const [artistUser, setArtistUser] = useState<UserProfileResponse | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!decodedArtistName) return;
+    const fetchArtist = async () => {
+      try {
+        const searchRes = await api.get(`/search?query=${encodeURIComponent(decodedArtistName)}`);
+        const users: UserProfileResponse[] = searchRes.data?.data?.users || [];
+        const user = users.find(u => u.username.toLowerCase() === decodedArtistName.toLowerCase());
+        if (user) setArtistUser(user);
+      } catch (err) {
+        console.error("Failed to find artist", err);
+      }
+    };
+    fetchArtist();
+  }, [decodedArtistName]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('waiting_approval');
+    if (!artistUser) {
+      setError("Cannot submit: Artist not found in database.");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const priceVal = parseFloat(budget) || 25; // Default if not specified
+      
+      const payload = {
+        artistId: artistUser.userId,
+        title: `${commissionType} - ${usageType}`,
+        description: description + (fileName ? `\n\nReference File: ${fileName}` : ''),
+        price: priceVal,
+        deadlineUtc: deadline ? new Date(deadline).toISOString() : null
+      };
+
+      const res = await api.post('/commissions', payload);
+      if (res.data?.success) {
+        setStep('waiting_approval');
+      } else {
+        setError(res.data?.message || "Failed to create commission.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || "An error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePaymentSubmit = (e: React.FormEvent) => {
@@ -224,6 +273,12 @@ export default function RequestCommission() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Main Form (Left Column) */}
         <div className="lg:col-span-2">
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl flex items-center gap-3">
+              <span className="material-symbols-outlined text-red-400">error</span>
+              <p className="text-red-400 font-medium">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleFormSubmit} className="space-y-8 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200 dark:border-white/5 rounded-3xl p-6 sm:p-8 shadow-sm">
             
             {/* Commission Type Dropdown */}
@@ -348,9 +403,9 @@ export default function RequestCommission() {
             </div>
 
             <div className="pt-6">
-              <button type="submit" className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-[1.02] transition-all flex justify-center items-center gap-2">
-                Submit Request
-                <span className="material-symbols-outlined text-base">send</span>
+              <button disabled={isSubmitting} type="submit" className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:hover:from-indigo-600 disabled:hover:to-purple-600 text-white rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-[1.02] disabled:hover:scale-100 transition-all flex justify-center items-center gap-2">
+                {isSubmitting ? 'Submitting...' : 'Submit Request'}
+                {!isSubmitting && <span className="material-symbols-outlined text-base">send</span>}
               </button>
             </div>
           </form>

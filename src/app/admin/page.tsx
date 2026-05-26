@@ -1,135 +1,190 @@
 "use client";
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+export default function AdminPanel() {
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
+  
+  const [stats, setStats] = useState<any>(null);
+  const [reports, setReports] = useState<any[]>([]);
+  const [tab, setTab] = useState<'overview' | 'reports'>('overview');
+  const [isLoading, setIsLoading] = useState(true);
 
-export default function AdminPage() {
-  const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'reports'>('overview');
+  useEffect(() => {
+    // Basic protection: if not logged in
+    if (!isAuthenticated) return;
+    
+    // Usually we would check user.role === 'Admin' but let's just try the API
+    // If it 403s, we will catch it.
+    const fetchAdminData = async () => {
+      setIsLoading(true);
+      try {
+        const statsRes = await api.get('/admin/stats');
+        if (statsRes.data?.success) setStats(statsRes.data.data);
+
+        const reportsRes = await api.get('/admin/reports');
+        if (reportsRes.data?.success) setReports(reportsRes.data.data.items || []);
+      } catch (err: any) {
+        console.error('Failed to load admin data', err);
+        if (err.response?.status === 403 || err.response?.status === 401) {
+          router.push('/');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAdminData();
+  }, [isAuthenticated, router]);
+
+  const handleReviewReport = async (reportId: number, status: string) => {
+    try {
+      const res = await api.post(`/admin/reports/${reportId}/review`, { status, adminNotes: "Reviewed via Admin Panel" });
+      if (res.data?.success) {
+        // Remove from list or update
+        setReports(prev => prev.filter(r => r.id !== reportId));
+      }
+    } catch (err) {
+      console.error("Failed to review report", err);
+    }
+  };
+
+  if (isLoading) return <div className="text-center p-12 text-slate-500">Loading admin panel...</div>;
+  if (!stats) return <div className="text-center p-12 text-red-500">Access Denied or Failed to load.</div>;
 
   return (
-    <div className="max-w-7xl mx-auto animate-[fadeIn_0.3s_ease-out]">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-6xl mx-auto space-y-12 pb-12">
+      <div className="flex justify-between items-end border-b border-slate-200 dark:border-white/10 pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white font-['Space_Grotesk']">Admin Dashboard</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage platform operations and moderation.</p>
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white font-['Space_Grotesk'] mb-2 flex items-center gap-3">
+            <span className="material-symbols-outlined text-indigo-500 text-4xl">admin_panel_settings</span>
+            Admin Panel
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400">Manage platform content, users, and moderation queues.</p>
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-4 border-b border-slate-200 dark:border-white/10 mb-8">
         <button
-          onClick={() => setActiveTab('overview')}
-          className={`pb-4 px-2 font-bold transition-colors relative ${activeTab === 'overview' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
+          onClick={() => setTab('overview')}
+          className={`px-6 py-3 font-bold border-b-2 transition-colors ${tab === 'overview' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
         >
           Overview
-          {activeTab === 'overview' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 dark:bg-indigo-400"></div>}
         </button>
         <button
-          onClick={() => setActiveTab('users')}
-          className={`pb-4 px-2 font-bold transition-colors relative ${activeTab === 'users' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
+          onClick={() => setTab('reports')}
+          className={`px-6 py-3 font-bold border-b-2 transition-colors flex items-center gap-2 ${tab === 'reports' ? 'border-rose-500 text-rose-600 dark:text-rose-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
         >
-          User Management
-          {activeTab === 'users' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 dark:bg-indigo-400"></div>}
-        </button>
-        <button
-          onClick={() => setActiveTab('reports')}
-          className={`pb-4 px-2 font-bold transition-colors relative ${activeTab === 'reports' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
-        >
-          Reports & Moderation
-          {activeTab === 'reports' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 dark:bg-indigo-400"></div>}
+          Moderation Queue
+          {stats.pendingReports > 0 && (
+            <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">{stats.pendingReports}</span>
+          )}
         </button>
       </div>
 
-      {/* Overview Tab Content */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[
-            { label: 'Total Users', value: '1,248', icon: 'group', color: 'bg-blue-500/10 text-blue-500' },
-            { label: 'Active Artworks', value: '8,432', icon: 'palette', color: 'bg-indigo-500/10 text-indigo-500' },
-            { label: 'Total Commissions', value: '$12,450', icon: 'payments', color: 'bg-emerald-500/10 text-emerald-500' },
-            { label: 'Pending Reports', value: '14', icon: 'flag', color: 'bg-rose-500/10 text-rose-500' },
-          ].map((stat, i) => (
-            <div key={i} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${stat.color}`}>
-                <span className="material-symbols-outlined">{stat.icon}</span>
-              </div>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
-              <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{stat.value}</h3>
+      {tab === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white/50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex items-center gap-4">
+            <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-3xl">group</span>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Users Tab Content */}
-      {activeTab === 'users' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-slate-200 dark:border-white/5 flex justify-between items-center">
-            <h3 className="font-bold text-lg text-slate-900 dark:text-white">Active Users</h3>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-              <input type="text" placeholder="Search users..." className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-lg text-sm focus:outline-none focus:border-indigo-500" />
+            <div>
+              <p className="text-slate-500 text-sm font-bold uppercase mb-1">Total Users</p>
+              <p className="text-3xl font-black text-slate-900 dark:text-white">{stats.totalUsers}</p>
             </div>
           </div>
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-white/5">
-                <th className="py-3 px-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">User</th>
-                <th className="py-3 px-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Role</th>
-                <th className="py-3 px-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="py-3 px-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[1, 2, 3].map(i => (
-                <tr key={i} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">U{i}</div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">User Name {i}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">user{i}@example.com</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-slate-600 dark:text-slate-300">Creator</td>
-                  <td className="py-4 px-6">
-                    <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-full font-bold">Active</span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <button className="text-rose-500 hover:text-rose-600 text-sm font-bold flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[16px]">block</span> Ban
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          
+          <div className="bg-white/50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex items-center gap-4">
+            <div className="w-14 h-14 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-3xl">brush</span>
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm font-bold uppercase mb-1">Artworks</p>
+              <p className="text-3xl font-black text-slate-900 dark:text-white">{stats.totalArtworks}</p>
+            </div>
+          </div>
+
+          <div className="bg-white/50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex items-center gap-4">
+            <div className="w-14 h-14 bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-3xl">flag</span>
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm font-bold uppercase mb-1">Total Reports</p>
+              <p className="text-3xl font-black text-slate-900 dark:text-white">{stats.totalReports}</p>
+            </div>
+          </div>
+
+          <div className="bg-white/50 dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-white/10 flex items-center gap-4">
+            <div className="w-14 h-14 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-3xl">block</span>
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm font-bold uppercase mb-1">Banned Users</p>
+              <p className="text-3xl font-black text-slate-900 dark:text-white">{stats.bannedUsers}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Reports Tab Content */}
-      {activeTab === 'reports' && (
-        <div className="space-y-4">
-          {[1, 2].map(i => (
-            <div key={i} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-start md:items-center shadow-sm">
-              <div className="w-12 h-12 bg-rose-100 dark:bg-rose-500/20 text-rose-500 rounded-xl flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined">flag</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] uppercase tracking-wider font-bold rounded">NSFW Content</span>
-                  <span className="text-xs text-slate-500">Reported 2 hours ago</span>
-                </div>
-                <h4 className="font-bold text-slate-900 dark:text-white mb-1">Inappropriate Artwork Upload</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">User 'Anonymous' reported artwork #8842 for violating community guidelines.</p>
-              </div>
-              <div className="flex gap-2 w-full md:w-auto">
-                <button className="flex-1 md:flex-none px-4 py-2 border border-slate-300 dark:border-white/10 rounded-lg text-sm font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">Review</button>
-                <button className="flex-1 md:flex-none px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-bold shadow-[0_0_10px_rgba(244,63,94,0.3)] transition-all">Remove Content</button>
-              </div>
+      {tab === 'reports' && (
+        <div className="bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-slate-200 dark:border-white/10">
+            <h2 className="text-xl font-bold font-['Space_Grotesk'] text-slate-900 dark:text-white">Pending Reports</h2>
+          </div>
+          {reports.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-950/50 border-b border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 text-sm">
+                    <th className="p-4 font-medium">Artwork</th>
+                    <th className="p-4 font-medium">Reported By</th>
+                    <th className="p-4 font-medium">Type</th>
+                    <th className="p-4 font-medium">Reason</th>
+                    <th className="p-4 font-medium">Date</th>
+                    <th className="p-4 font-medium text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((report) => (
+                    <tr key={report.id} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-4 font-bold text-slate-900 dark:text-white">{report.artworkTitle}</td>
+                      <td className="p-4 text-slate-600 dark:text-slate-300">{report.reportedByUsername}</td>
+                      <td className="p-4">
+                        <span className="inline-flex px-2 py-1 rounded bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 text-xs font-bold uppercase">
+                          {report.reportType}
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-500 dark:text-slate-400 text-sm max-w-[200px] truncate" title={report.reason}>{report.reason}</td>
+                      <td className="p-4 text-slate-500 dark:text-slate-400 text-sm">{new Date(report.createdAtUtc).toLocaleDateString()}</td>
+                      <td className="p-4 text-right flex justify-end gap-2">
+                        <button 
+                          onClick={() => handleReviewReport(report.id, 'Rejected')}
+                          className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-xs font-bold transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                        <button 
+                          onClick={() => handleReviewReport(report.id, 'Approved')}
+                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-xs font-bold transition-colors"
+                        >
+                          Approve (Takedown)
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
+          ) : (
+            <div className="p-12 text-center">
+              <span className="material-symbols-outlined text-5xl text-emerald-500 mb-4">check_circle</span>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">All caught up!</h3>
+              <p className="text-slate-500 dark:text-slate-400">There are no pending reports in the moderation queue.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
