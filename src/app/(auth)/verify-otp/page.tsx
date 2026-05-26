@@ -69,7 +69,7 @@ export default function VerifyOtpPage() {
           type: "EmailVerification"
         });
 
-        if (response.data?.success) {
+        if (response.data?.isSuccess) {
           router.push('/login');
         } else {
           setError(response.data?.message || "Verification failed");

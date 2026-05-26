@@ -23,10 +23,10 @@ export default function AdminPanel() {
       setIsLoading(true);
       try {
         const statsRes = await api.get('/admin/stats');
-        if (statsRes.data?.success) setStats(statsRes.data.data);
+        if (statsRes.data?.isSuccess) setStats(statsRes.data.data);
 
         const reportsRes = await api.get('/admin/reports');
-        if (reportsRes.data?.success) setReports(reportsRes.data.data.items || []);
+        if (reportsRes.data?.isSuccess) setReports(reportsRes.data.data.items || []);
       } catch (err: any) {
         console.error('Failed to load admin data', err);
         if (err.response?.status === 403 || err.response?.status === 401) {
@@ -43,7 +43,7 @@ export default function AdminPanel() {
   const handleReviewReport = async (reportId: number, status: string) => {
     try {
       const res = await api.post(`/admin/reports/${reportId}/review`, { status, adminNotes: "Reviewed via Admin Panel" });
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         // Remove from list or update
         setReports(prev => prev.filter(r => r.id !== reportId));
       }

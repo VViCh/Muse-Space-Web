@@ -42,7 +42,7 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         const statsRes = await api.get('/dashboard/stats');
-        if (statsRes.data?.success) setStats(statsRes.data.data);
+        if (statsRes.data?.isSuccess) setStats(statsRes.data.data);
 
         const [commsRes, eventsRes, groupsRes, userArtworksRes] = await Promise.all([
           api.get('/commissions/requested'),
@@ -50,10 +50,10 @@ export default function Dashboard() {
           api.get('/groups'),
           api.get(`/artwork/user/${user?.id || 0}`)
         ]);
-        if (commsRes.data?.success) setCommissions(commsRes.data.data.items || []);
-        if (eventsRes.data?.success) setEvents(eventsRes.data.data.items || eventsRes.data.data || []);
-        if (groupsRes.data?.success) setGroups(groupsRes.data.data.items || groupsRes.data.data || []);
-        if (userArtworksRes.data?.success) setUserArtworks(userArtworksRes.data.data.items || userArtworksRes.data.data || []);
+        if (commsRes.data?.isSuccess) setCommissions(commsRes.data.data.items || []);
+        if (eventsRes.data?.isSuccess) setEvents(eventsRes.data.data.items || eventsRes.data.data || []);
+        if (groupsRes.data?.isSuccess) setGroups(groupsRes.data.data.items || groupsRes.data.data || []);
+        if (userArtworksRes.data?.isSuccess) setUserArtworks(userArtworksRes.data.data.items || userArtworksRes.data.data || []);
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       }

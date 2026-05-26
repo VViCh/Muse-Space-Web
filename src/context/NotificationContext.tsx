@@ -39,7 +39,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const fetchUnreadCount = async () => {
     try {
       const res = await api.get('/notifications/unread-count');
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setUnreadCount(res.data.data);
       }
     } catch (err) {
@@ -50,7 +50,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const fetchNotifications = async () => {
     try {
       const res = await api.get('/notifications');
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setNotifications(res.data.data.items || []);
         fetchUnreadCount();
       }
@@ -101,7 +101,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const markAsRead = async (id: number) => {
     try {
       const res = await api.post(`/notifications/${id}/read`);
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
@@ -113,7 +113,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const markAllAsRead = async () => {
     try {
       const res = await api.post(`/notifications/read-all`);
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         setUnreadCount(0);
       }

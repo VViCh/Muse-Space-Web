@@ -38,8 +38,8 @@ export default function GroupsPage() {
           api.get('/groups'),
           api.get('/events')
         ]);
-        if (groupRes.data?.success) setGroups(groupRes.data.data.items || groupRes.data.data);
-        if (eventRes.data?.success) setEvents(eventRes.data.data.items || eventRes.data.data);
+        if (groupRes.data?.isSuccess) setGroups(groupRes.data.data.items || groupRes.data.data);
+        if (eventRes.data?.isSuccess) setEvents(eventRes.data.data.items || eventRes.data.data);
       } catch (err) {
         console.error("Failed to fetch groups and events", err);
       } finally {
@@ -69,7 +69,7 @@ export default function GroupsPage() {
         description: newGroupDesc,
         isPrivate: false
       });
-      if (response.data?.success) {
+      if (response.data?.isSuccess) {
         setGroups([response.data.data, ...groups]);
         setShowModal(false);
         setNewGroupName('');

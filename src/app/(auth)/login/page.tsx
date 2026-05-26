@@ -28,7 +28,7 @@ export default function LoginPage() {
         password: authPassword,
       });
 
-      if (response.data?.success && response.data?.accessToken) {
+      if (response.data?.isSuccess && response.data?.accessToken) {
         login(response.data.accessToken, response.data.user);
         router.push('/');
       } else {

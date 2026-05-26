@@ -51,7 +51,7 @@ export default function Settings() {
       import('@/lib/api').then(({ default: api }) => {
         api.get(`/users/${user.id}/profile`)
           .then(res => {
-            if (res.data?.success) {
+            if (res.data?.isSuccess) {
               setIsAcceptingCommissions(res.data.data.isAcceptingCommissions || false);
             }
           })
@@ -67,7 +67,7 @@ export default function Settings() {
       const res = await api.put('/users/profile/commissions-status', {
         isAcceptingCommissions: !isAcceptingCommissions
       });
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setIsAcceptingCommissions(!isAcceptingCommissions);
         alert(res.data.message || 'Status updated');
       } else {

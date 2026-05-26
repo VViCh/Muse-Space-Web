@@ -39,7 +39,7 @@ export default function Workspace() {
           } else {
             // Fetch specific if not in active list
             const specificRes = await api.get(`/commissions/${orderId}`);
-            if (specificRes.data?.success) {
+            if (specificRes.data?.isSuccess) {
               setActiveOrder(specificRes.data.data);
               if (!combined.find(o => o.id === specificRes.data.data.id)) {
                 setActiveOrders([specificRes.data.data, ...combined]);
@@ -60,7 +60,7 @@ export default function Workspace() {
       if (!activeOrder) return;
       try {
         const res = await api.get(`/commissions/${activeOrder.id}/messages?pageSize=100`);
-        if (res.data?.success) {
+        if (res.data?.isSuccess) {
           // Sort messages by CreatedAtUtc
           const msgs = (res.data.data.items || []).sort((a: any, b: any) => new Date(a.createdAtUtc).getTime() - new Date(b.createdAtUtc).getTime());
           setMessages(msgs);
@@ -83,7 +83,7 @@ export default function Workspace() {
 
     try {
       const res = await api.post(`/commissions/${activeOrder.id}/messages`, { content: newMessage });
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setMessages([...messages, res.data.data]);
         setNewMessage('');
       }

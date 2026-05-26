@@ -17,7 +17,7 @@ export default function DeliveryPage() {
     const fetchOrder = async () => {
       try {
         const res = await api.get(`/commissions/${orderId}`);
-        if (res.data?.success) {
+        if (res.data?.isSuccess) {
           setOrderDetails({
             id: res.data.data.id,
             artist: res.data.data.artistUsername,
@@ -38,7 +38,7 @@ export default function DeliveryPage() {
   const handleCompleteOrder = async () => {
     try {
       const res = await api.patch(`/commissions/${orderId}/status`, { status: 5 }); // 5 = Completed
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setIsCompleted(true);
       }
     } catch (err) {

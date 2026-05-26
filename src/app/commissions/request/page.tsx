@@ -65,7 +65,7 @@ export default function RequestCommission() {
       };
 
       const res = await api.post('/commissions', payload);
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setStep('waiting_approval');
       } else {
         setError(res.data?.message || "Failed to create commission.");

@@ -37,7 +37,7 @@ export default function RegisterPage() {
         lastName: "Artist"
       });
 
-      if (response.data?.success) {
+      if (response.data?.isSuccess) {
         sessionStorage.setItem('registerEmail', authEmail);
         router.push('/verify-otp');
       } else {

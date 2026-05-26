@@ -49,7 +49,7 @@ export default function CommentSection({ artworkId }: { artworkId: number }) {
     setError(null);
     try {
       const res = await api.post(`/artworks/${artworkId}/comments`, { content: newComment });
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setNewComment("");
         fetchComments();
       } else {

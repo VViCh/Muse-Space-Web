@@ -13,7 +13,7 @@ export default function CommissionsPage() {
       try {
         // Fetch users using the search endpoint
         const res = await api.get('/search?query=');
-        if (res.data?.success && res.data?.data?.users) {
+        if (res.data?.isSuccess && res.data?.data?.users) {
           // Filter by 'isAcceptingCommissions' flag
           const acceptingArtists = res.data.data.users.filter((u: any) => u.isAcceptingCommissions);
           setArtists(acceptingArtists);

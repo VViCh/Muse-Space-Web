@@ -17,7 +17,7 @@ export default function PaymentPage() {
     const fetchOrder = async () => {
       try {
         const res = await api.get(`/commissions/${orderId}`);
-        if (res.data?.success) {
+        if (res.data?.isSuccess) {
           setOrderDetails({
             id: res.data.data.id,
             artist: res.data.data.artistUsername,
@@ -52,7 +52,7 @@ export default function PaymentPage() {
   const handleConfirmPayment = async () => {
     try {
       const res = await api.post(`/payments/${orderId}/confirm`);
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         setPaymentState('success');
       } else {
         setPaymentState('failure');

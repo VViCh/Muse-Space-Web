@@ -56,7 +56,7 @@ function SearchContent() {
       setIsLoading(true);
       try {
         const response = await api.get(`/search?query=${encodeURIComponent(query)}`);
-        if (isMounted && response.data?.success) {
+        if (isMounted && response.data?.isSuccess) {
           setSearchResults(response.data.data);
         }
       } catch (err) {

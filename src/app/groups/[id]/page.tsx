@@ -22,7 +22,7 @@ export default function GroupDetails() {
           api.get(`/groups/${id}`),
           api.get(`/groups/${id}/posts`)
         ]);
-        if (groupRes.data?.success) {
+        if (groupRes.data?.isSuccess) {
           setGroup({
             ...groupRes.data.data,
             members: groupRes.data.data.memberCount || 0,
@@ -32,7 +32,7 @@ export default function GroupDetails() {
             role: "member"
           });
         }
-        if (postsRes.data?.success) {
+        if (postsRes.data?.isSuccess) {
           const items = postsRes.data.data.items || postsRes.data.data || [];
           setPosts(items.map((p: any) => ({
             id: p.id,
@@ -87,7 +87,7 @@ export default function GroupDetails() {
     
     try {
       const res = await api.post(`/groups/${id}/posts`, { content: postText });
-      if (res.data?.success) {
+      if (res.data?.isSuccess) {
         const p = res.data.data;
         const newPost = {
           id: p.id,
