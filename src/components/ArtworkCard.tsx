@@ -34,7 +34,7 @@ export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
         <img
           src={imageUrl}
           alt={artwork.title}
-          className={`w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110 ${!isLoaded ? 'hidden' : 'block'}`}
+          className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${!isLoaded ? 'opacity-0 absolute inset-0' : 'opacity-100 relative'}`}
           onContextMenu={(e) => e.preventDefault()}
           loading="lazy"
           onLoad={() => setIsLoaded(true)}
