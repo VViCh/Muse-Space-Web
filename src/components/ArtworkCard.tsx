@@ -16,14 +16,13 @@ export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
     <div
       onClick={() => onClick(artwork)}
       className="group relative cursor-pointer overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-800 transition-all hover:shadow-2xl w-full"
-      style={{ aspectRatio }}
     >
       {/* Image with Right Click Protection */}
       {!hasError ? (
         <img
           src={artwork.contentUrl || artwork.thumbnailUrl}
           alt={artwork.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110"
           onContextMenu={(e) => e.preventDefault()}
           loading="lazy"
           onError={() => {
@@ -32,7 +31,7 @@ export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
           }}
         />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 p-4 text-center">
+        <div style={{ aspectRatio }} className="w-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 p-4 text-center">
           <span className="material-symbols-outlined text-4xl mb-2 opacity-50">broken_image</span>
           <p className="text-sm font-medium opacity-70 line-clamp-2 w-full px-2">{artwork.title}</p>
         </div>
