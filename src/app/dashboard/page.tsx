@@ -325,16 +325,17 @@ export default function Dashboard() {
         </div>
 
         {displayedArtworks.length > 0 ? (
-          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+          <Masonry
+            breakpointCols={MASONRY_BREAKPOINTS}
+            className="flex w-auto gap-6"
+            columnClassName="flex flex-col gap-6"
+          >
             {displayedArtworks.map((item, index) => (
-              <div
-                key={item.id}
-                className="break-inside-avoid w-full"
-              >
+              <div key={item.id}>
                 <ArtworkCard artwork={item} onClick={setSelectedArtwork} />
               </div>
             ))}
-          </div>
+          </Masonry>
         ) : (
           <div className="bg-slate-100 dark:bg-slate-900/30 border border-dashed border-slate-300 dark:border-white/20 rounded-2xl p-12 text-center">
             <span className="material-symbols-outlined text-4xl text-slate-400 mb-2">
