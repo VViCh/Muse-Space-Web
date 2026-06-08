@@ -1,6 +1,5 @@
+import { useState } from 'react';
 import { useArtwork, type Artwork } from '../context/ArtworkContext';
-
-
 
 interface ArtworkCardProps {
   artwork: Artwork;
@@ -9,20 +8,32 @@ interface ArtworkCardProps {
 
 export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
   const { toggleLike, toggleSave } = useArtwork();
+  const [hasError, setHasError] = useState(false);
+
+  const aspectRatio = artwork.width && artwork.height ? `${artwork.width} / ${artwork.height}` : 'auto';
 
   return (
     <div
       onClick={() => onClick(artwork)}
-      className="group relative cursor-pointer overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-800 transition-all hover:shadow-2xl"
+      className="group relative cursor-pointer overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-800 transition-all hover:shadow-2xl w-full"
+      style={{ aspectRatio }}
     >
       {/* Image with Right Click Protection */}
-      <img
-        src={artwork.contentUrl || artwork.thumbnailUrl}
-        alt={artwork.title}
-        className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110"
-        onContextMenu={(e) => e.preventDefault()}
-        loading="lazy"
-      />
+      {!hasError ? (
+        <img
+          src={artwork.contentUrl || artwork.thumbnailUrl}
+          alt={artwork.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          onContextMenu={(e) => e.preventDefault()}
+          loading="lazy"
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 p-4 text-center">
+          <span className="material-symbols-outlined text-4xl mb-2 opacity-50">broken_image</span>
+          <p className="text-sm font-medium opacity-70 line-clamp-2 w-full px-2">{artwork.title}</p>
+        </div>
+      )}
 
       {/* Hover Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col justify-end p-6">

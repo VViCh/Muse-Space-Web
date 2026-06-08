@@ -14,6 +14,8 @@ export interface Artwork {
   contentUrl: string;
   thumbnailUrl: string;
   mediaType: string;
+  width?: number;
+  height?: number;
   creatorId: number;
   creatorUsername: string;
   creatorProfileImageUrl: string;
