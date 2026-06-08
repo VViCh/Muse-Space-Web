@@ -28,8 +28,8 @@ export default function LoginPage() {
         password: authPassword,
       });
 
-      if (response.data?.success && response.data?.data?.accessToken) {
-        login(response.data.data.accessToken, response.data.data.user);
+      if (response.data?.success && response.data?.accessToken) {
+        login(response.data.accessToken, response.data.user);
         router.push('/');
       } else {
         setError(response.data?.message || "Login failed");

@@ -39,6 +39,10 @@ export default function RegisterPage() {
 
       if (response.data?.success) {
         sessionStorage.setItem('registerEmail', authEmail);
+        
+        // Backend only registers, it doesn't automatically send OTP. We must trigger it here.
+        await api.post('/auth/otp/generate', { email: authEmail, purpose: "EmailVerification" });
+        
         router.push('/verify-otp');
       } else {
         setError(response.data?.message || "Registration failed");

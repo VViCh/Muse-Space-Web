@@ -65,11 +65,11 @@ export default function VerifyOtpPage() {
 
         const response = await api.post('/auth/otp/verify-email', {
           email,
-          otpCode: otpValue,
-          type: "EmailVerification"
+          code: otpValue,
+          purpose: "EmailVerification"
         });
 
-        if (response.data?.isSuccess) {
+        if (response.data?.success) {
           router.push('/login');
         } else {
           setError(response.data?.message || "Verification failed");
@@ -142,7 +142,7 @@ export default function VerifyOtpPage() {
                 const email = sessionStorage.getItem('registerEmail');
                 if (email) {
                   try {
-                    await api.post('/auth/otp/generate', { email, type: 'EmailVerification' });
+                    await api.post('/auth/otp/generate', { email, purpose: 'EmailVerification' });
                     alert("OTP Resent to " + email);
                   } catch (e) {
                     alert("Failed to resend OTP");
