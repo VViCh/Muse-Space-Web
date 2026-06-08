@@ -26,7 +26,10 @@ export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           onContextMenu={(e) => e.preventDefault()}
           loading="lazy"
-          onError={() => setHasError(true)}
+          onError={() => {
+            // Prevent synchronous state update during render for cached broken images
+            setTimeout(() => setHasError(true), 0);
+          }}
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 p-4 text-center">
