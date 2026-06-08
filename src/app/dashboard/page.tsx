@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Masonry from 'react-masonry-css';
-import PinterestGrid from '@/components/PinterestGrid';
+import MasonryGrid from '@/components/MasonryGrid';
 import { useArtwork } from '@/context/ArtworkContext';
 import ArtworkCard from '@/components/ArtworkCard';
 import ArtworkDetailModal from '@/components/ArtworkDetailModal';
@@ -326,7 +326,7 @@ export default function Dashboard() {
         </div>
 
         {displayedArtworks.length > 0 ? (
-          <PinterestGrid
+          <MasonryGrid
             items={displayedArtworks}
             renderItem={(item) => (
               <div key={item.id}>

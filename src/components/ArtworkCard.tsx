@@ -13,6 +13,12 @@ export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
 
   const aspectRatio = artwork.width && artwork.height ? `${artwork.width} / ${artwork.height}` : 'auto';
 
+  // Fix Unsplash mock images by forcing them to crop to the hardcoded database dimensions
+  let imageUrl = artwork.contentUrl || artwork.thumbnailUrl;
+  if (imageUrl?.includes('images.unsplash.com') && artwork.width && artwork.height) {
+    imageUrl += `&h=${artwork.height}&fit=crop`;
+  }
+
   return (
     <div
       onClick={() => onClick(artwork)}
@@ -26,7 +32,7 @@ export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
       {/* Image with Right Click Protection */}
       {!hasError && (
         <img
-          src={artwork.contentUrl || artwork.thumbnailUrl}
+          src={imageUrl}
           alt={artwork.title}
           className={`w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110 ${!isLoaded ? 'hidden' : 'block'}`}
           onContextMenu={(e) => e.preventDefault()}

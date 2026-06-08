@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Artwork } from '@/context/ArtworkContext';
 
-interface PinterestGridProps {
+interface MasonryGridProps {
   items: Artwork[];
   renderItem: (item: Artwork, index: number) => React.ReactNode;
   breakpoints?: { [key: string]: number };
 }
 
-export default function PinterestGrid({ items, renderItem, breakpoints = { default: 4, 1536: 4, 1280: 3, 1024: 3, 768: 2, 640: 1 } }: PinterestGridProps) {
+export default function MasonryGrid({ items, renderItem, breakpoints = { default: 4, 1536: 4, 1280: 3, 1024: 3, 768: 2, 640: 1 } }: MasonryGridProps) {
   const [columns, setColumns] = useState(breakpoints.default);
 
   useEffect(() => {

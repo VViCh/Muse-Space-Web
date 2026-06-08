@@ -3,7 +3,7 @@ import { useParams } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Masonry from 'react-masonry-css';
-import PinterestGrid from '@/components/PinterestGrid';
+import MasonryGrid from '@/components/MasonryGrid';
 import { useArtwork, type Artwork } from '@/context/ArtworkContext';
 import ArtworkCard from '@/components/ArtworkCard';
 import ArtworkDetailModal from '@/components/ArtworkDetailModal';
@@ -307,7 +307,7 @@ export default function ProfilePage() {
               Portfolio Gallery
             </h2>
             {artistArtworks.length > 0 ? (
-              <PinterestGrid
+              <MasonryGrid
                 items={artistArtworks}
                 renderItem={(item) => (
                   <div key={item.id}>
