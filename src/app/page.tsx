@@ -66,7 +66,7 @@ function HomeContent() {
             const shuffled = [...allArtworks].sort(() => 0.5 - Math.random());
             const newArtworks = shuffled.map((art, idx) => ({
               ...art,
-              id: art.id + prev.length * 1000 + idx,
+              id: 1000000 + prev.length * 1000 + idx,
             }));
             return [...prev, ...newArtworks];
           });
