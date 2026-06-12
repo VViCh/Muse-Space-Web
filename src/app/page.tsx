@@ -28,8 +28,8 @@ function HomeContent() {
 
   const { artworks: allArtworks, isLoading: isContextLoading, hasMore, isFetchingMore, fetchError, resetFetchError, fetchMoreArtworks } = useArtwork();
 
-  const [filteredArtworks, setFilteredArtworks] = useState<Artwork[]>(allArtworks);
-  const [isLoading, setIsLoading] = useState(true);
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
 
   const observer = useRef<IntersectionObserver | null>(null);
@@ -43,26 +43,37 @@ function HomeContent() {
     }
   }, [postId, allArtworks]);
 
+  // Debounce the search query to show a loading state while typing, but don't touch artworks array directly
   useEffect(() => {
-    setIsLoading(true);
+    // If the query is empty, we can resolve immediately without loading state
+    if (!query) {
+      setDebouncedQuery('');
+      setIsSearching(false);
+      return;
+    }
+    
+    setIsSearching(true);
     const timer = setTimeout(() => {
-      if (query) {
-        const filtered = allArtworks.filter(art =>
-          art.title.toLowerCase().includes(query) ||
-          art.tags?.some(tag => tag.name.toLowerCase().includes(query))
-        );
-        setFilteredArtworks(filtered);
-      } else {
-        setFilteredArtworks(allArtworks);
-      }
-      setIsLoading(false);
+      setDebouncedQuery(query);
+      setIsSearching(false);
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, allArtworks]);
+  }, [query]);
+
+  // Synchronously compute the filtered list. When allArtworks changes from infinite scroll, this updates instantly without triggering isSearching
+  const filteredArtworks = useMemo(() => {
+    if (!debouncedQuery) return allArtworks;
+    return allArtworks.filter(art =>
+      art.title.toLowerCase().includes(debouncedQuery) ||
+      art.tags?.some(tag => tag.name.toLowerCase().includes(debouncedQuery))
+    );
+  }, [debouncedQuery, allArtworks]);
+
+  const showSkeletons = isContextLoading || isSearching;
 
   const lastArtworkRef = useCallback((node: HTMLDivElement | null) => {
     // If we're loading, fetching more, currently searching by query, or hit an error, disable infinite scroll
-    if (isLoading || isContextLoading || isFetchingMore || query || !hasMore || fetchError) return;
+    if (showSkeletons || isFetchingMore || query || !hasMore || fetchError) return;
     if (observer.current) observer.current.disconnect();
 
     observer.current = new IntersectionObserver(entries => {
@@ -72,7 +83,7 @@ function HomeContent() {
     });
 
     if (node) observer.current.observe(node);
-  }, [isLoading, isContextLoading, isFetchingMore, query, hasMore, fetchError, fetchMoreArtworks]);
+  }, [showSkeletons, isFetchingMore, query, hasMore, fetchError, fetchMoreArtworks]);
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 py-8">
@@ -87,7 +98,7 @@ function HomeContent() {
 
       <TagCarousel />
 
-      {query && !isLoading && (
+      {query && !showSkeletons && (
         <div className="mb-8 space-y-6">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-white/10 pb-2 flex items-center gap-2">
             <span className="material-symbols-outlined">search</span> Search Results for "{query}"
@@ -114,7 +125,7 @@ function HomeContent() {
         </div>
       )}
 
-      {isLoading || isContextLoading ? (
+      {showSkeletons ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-80 rounded-2xl bg-slate-200 animate-pulse dark:bg-slate-800" />
@@ -138,6 +149,13 @@ function HomeContent() {
           {isFetchingMore && (
             <div className="py-10 flex justify-center">
               <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+
+          {!hasMore && filteredArtworks.length > 0 && !query && (
+            <div className="py-10 flex flex-col items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600">rocket_launch</span>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">You've reached the edge of the galaxy.</p>
             </div>
           )}
 
