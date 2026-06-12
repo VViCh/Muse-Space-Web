@@ -61,7 +61,7 @@ export default function MasonryGrid({ items, renderItem, breakpoints = { default
     <div className="flex w-full gap-6">
       {columnData.map((colItems, colIndex) => (
         <div key={colIndex} className="flex-1 flex flex-col gap-6 min-w-0">
-          {colItems.map((item, itemIndex) => renderItem(item, itemIndex))}
+          {colItems.map((item) => renderItem(item, items.indexOf(item)))}
         </div>
       ))}
     </div>
