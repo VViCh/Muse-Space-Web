@@ -13,6 +13,8 @@ export interface User {
   lastName: string;
   isActive: boolean;
   isEmailVerified: boolean;
+  profileImageUrl?: string;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {

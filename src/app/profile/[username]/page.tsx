@@ -74,8 +74,6 @@ export default function ProfilePage() {
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!profile) return <div className="p-8 text-center text-slate-500">Artist not found</div>;
 
-  // No reviews available from API currently
-  ];
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 py-8">
