@@ -7,7 +7,6 @@ import ArtworkDetailModal from '@/components/ArtworkDetailModal';
 import { useArtwork, type Artwork } from '@/context/ArtworkContext';
 import { useAuth } from '@/context/AuthContext';
 import ArtworkCard from '@/components/ArtworkCard';
-import ArtworkDetailModal from '@/components/ArtworkDetailModal';
 import api from '@/lib/api';
 import { UserProfileResponse } from '@/app/search/page';
 
@@ -239,7 +238,4 @@ export default function ProfilePage() {
 
     </div>
   );
-
-
-
-
+}

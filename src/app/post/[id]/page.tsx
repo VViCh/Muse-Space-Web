@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Artwork } from '@/context/ArtworkContext';
+import { Artwork, useArtwork } from '@/context/ArtworkContext';
 import CommentSection from '@/components/CommentSection';
 import MasonryGrid from '@/components/MasonryGrid';
 import ArtworkCard from '@/components/ArtworkCard';
