@@ -63,6 +63,23 @@ export default function CommentSection({ artworkId }: { artworkId: number }) {
     }
   };
 
+  const handleDelete = async (commentId: number) => {
+    if (!user) return;
+    if (!confirm("Are you sure you want to delete this comment?")) return;
+    
+    try {
+      const res = await api.delete(`/comments/${commentId}`);
+      if (res.data?.isSuccess) {
+        setComments(comments.filter(c => c.id !== commentId));
+      } else {
+        setError("Failed to delete comment.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while deleting your comment.");
+    }
+  };
+
   if (isLoading) {
     return <div className="text-slate-500 text-sm mt-8">Loading comments...</div>;
   }
@@ -119,23 +136,35 @@ export default function CommentSection({ artworkId }: { artworkId: number }) {
       {/* Comment List */}
       <div className="space-y-6 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
         {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-3">
+          <div key={comment.id} className="flex gap-3 group relative">
             <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 font-bold shrink-0 overflow-hidden">
               {comment.userProfileImageUrl ? (
                 <img src={comment.userProfileImageUrl} alt={comment.username} className="w-full h-full object-cover" />
               ) : (
-                comment.username.charAt(0).toUpperCase()
+                (comment.username || "U").charAt(0).toUpperCase()
               )}
             </div>
-            <div>
+            <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-bold text-sm text-slate-900 dark:text-white">{comment.username}</span>
+                <span className="font-bold text-sm text-slate-900 dark:text-white">{comment.username || "Unknown User"}</span>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   {new Date(comment.createdAtUtc).toLocaleDateString()}
                 </span>
               </div>
               <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{comment.content}</p>
             </div>
+            
+            {user?.id === comment.userId && (
+              <button
+                onClick={() => handleDelete(comment.id)}
+                className="absolute top-0 right-0 p-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Delete comment"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
           </div>
         ))}
         {comments.length === 0 && (
