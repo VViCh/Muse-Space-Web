@@ -66,8 +66,13 @@ export default function Settings() {
     }
   }, [isAuthenticated, user]);
 
+  const isPaymentDataValid = paymentData.bankName.trim() !== '' && paymentData.accountNumber.trim() !== '' && paymentData.accountHolder.trim() !== '';
+
+  const [message, setMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
+
   const handleToggleCommissions = async () => {
     setIsTogglingCommissions(true);
+    setMessage(null);
     try {
       const { default: api } = await import('@/lib/api');
       const res = await api.put('/users/profile/commissions-status', {
@@ -75,13 +80,13 @@ export default function Settings() {
       });
       if (res.data?.isSuccess) {
         setIsAcceptingCommissions(!isAcceptingCommissions);
-        alert(res.data.message || 'Status updated');
+        setMessage({type: 'success', text: res.data.message || 'Status updated'});
       } else {
-        alert(res.data?.message || 'Failed to update status');
+        setMessage({type: 'error', text: res.data?.message || 'Failed to update status'});
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.errors?.validation?.[0] || err.response?.data?.message || 'Failed to update status';
-      alert(errorMessage);
+      setMessage({type: 'error', text: errorMessage});
     } finally {
       setIsTogglingCommissions(false);
     }
@@ -89,6 +94,7 @@ export default function Settings() {
 
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
+    setMessage(null);
     try {
       const { default: api } = await import('@/lib/api');
       const res = await api.put('/users/profile', {
@@ -96,29 +102,28 @@ export default function Settings() {
         avatarUrl: profilePhoto
       });
       if (res.data?.isSuccess) {
-        alert('Profile saved successfully!');
+        setMessage({type: 'success', text: 'Profile saved successfully!'});
       } else {
-        alert(res.data?.message || 'Failed to save profile');
+        setMessage({type: 'error', text: res.data?.message || 'Failed to save profile'});
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to save profile');
+      setMessage({type: 'error', text: err.response?.data?.message || 'Failed to save profile'});
     } finally {
       setIsSavingProfile(false);
     }
   };
 
-  const isPaymentDataValid = paymentData.bankName.trim() !== '' && paymentData.accountNumber.trim() !== '' && paymentData.accountHolder.trim() !== '';
-
   const handleSavePayment = async () => {
     if (!isPaymentDataValid) return;
     setIsLoadingPayment(true);
+    setMessage(null);
     try {
       await axios.post('/api/artist/settings', paymentData);
-      alert('Settings Saved Successfully');
+      setMessage({type: 'success', text: 'Settings Saved Successfully'});
       setIsEditingPayment(false);
     } catch (error) {
       console.error("Failed to save artist payment settings", error);
-      alert('Failed to save settings. Please try again.');
+      setMessage({type: 'error', text: 'Failed to save settings. Please try again.'});
     } finally {
       setIsLoadingPayment(false);
     }
@@ -132,6 +137,13 @@ export default function Settings() {
           <p className="text-slate-600 dark:text-slate-400">Manage your preferences and profile.</p>
         </div>
       </div>
+
+      {message && (
+        <div className={`mb-8 p-4 border rounded-xl flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${message.type === 'error' ? 'bg-red-500/10 border-red-500/50 text-red-500' : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500'}`}>
+          <span className="material-symbols-outlined">{message.type === 'error' ? 'error' : 'check_circle'}</span>
+          <p className="flex-1 mt-0.5 font-medium">{message.text}</p>
+        </div>
+      )}
 
       <div className="space-y-8">
         

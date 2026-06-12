@@ -14,6 +14,7 @@ export default function GroupDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [group, setGroup] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
+  const { isAuthenticated, showAuthModal } = useAuth();
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -54,6 +55,21 @@ export default function GroupDetails() {
     };
     if (id) fetchGroupData();
   }, [id]);
+
+  const handleJoinGroup = async () => {
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    try {
+      const res = await api.post(`/groups/${id}/join`);
+      if (res.data?.isSuccess) {
+        setGroup({ ...group, isMember: true, members: group.members + 1, role: 'member' });
+      }
+    } catch (err) {
+      console.error("Failed to join group", err);
+    }
+  };
 
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -164,12 +180,21 @@ export default function GroupDetails() {
         
         {/* Actions inside banner */}
         <div className="absolute top-6 right-6 flex gap-3 z-10">
-          <button 
-            onClick={handleOpenSettings}
-            className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/10"
-          >
-            <span className="material-symbols-outlined">settings</span>
-          </button>
+          {!group.isMember && group.role !== 'admin' && group.role !== 'creator' ? (
+            <button 
+              onClick={handleJoinGroup}
+              className="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-colors"
+            >
+              Join Group
+            </button>
+          ) : (
+            <button 
+              onClick={handleOpenSettings}
+              className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/10"
+            >
+              <span className="material-symbols-outlined">settings</span>
+            </button>
+          )}
         </div>
 
         {/* Group Avatar & Info (Overlapping) */}
@@ -248,10 +273,11 @@ export default function GroupDetails() {
             </div>
             
             {/* Create Post Input */}
-            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl p-4 mb-8 shadow-sm flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 shrink-0 overflow-hidden">
-                 <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWmy5Q4ovxN33Th-UGPn98NuvbII0lCPqmH900zYzCXD2mP6WnfsQYg5CyX8rf4tFNtD3EAcK7_vZu3h2MU_Gzi_YsraaLm89EtjkvWOclLf5f7DaiQ6yFiTF5zMb4P_tGqBFSwGcuJdefW5lWWa40l0ig7vMzrnaymQADnuGMjTvqBGxuaz_Ds9JqY1j1zgLWtXElciJZpSH4VQ1En6cYqRdHG1FU-2qPyfeqf01eITZydAYUO7SFxaTcPpAabjipbkR5ZqVqdRs" alt="User" className="w-full h-full object-cover" />
-              </div>
+            {group.isMember || group.role === 'admin' || group.role === 'creator' ? (
+              <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl p-4 mb-8 shadow-sm flex gap-4">
+                <div className="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 shrink-0 overflow-hidden">
+                   <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWmy5Q4ovxN33Th-UGPn98NuvbII0lCPqmH900zYzCXD2mP6WnfsQYg5CyX8rf4tFNtD3EAcK7_vZu3h2MU_Gzi_YsraaLm89EtjkvWOclLf5f7DaiQ6yFiTF5zMb4P_tGqBFSwGcuJdefW5lWWa40l0ig7vMzrnaymQADnuGMjTvqBGxuaz_Ds9JqY1j1zgLWtXElciJZpSH4VQ1En6cYqRdHG1FU-2qPyfeqf01eITZydAYUO7SFxaTcPpAabjipbkR5ZqVqdRs" alt="User" className="w-full h-full object-cover" />
+                </div>
               <div className="flex-1 space-y-3">
                 <textarea 
                   id="post-textarea"
@@ -296,6 +322,17 @@ export default function GroupDetails() {
                 </div>
               </div>
             </div>
+            ) : (
+              <div className="bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 rounded-2xl p-6 mb-8 text-center">
+                <p className="text-slate-600 dark:text-slate-400 font-medium">Join this group to participate in discussions and post your own updates.</p>
+                <button 
+                  onClick={handleJoinGroup}
+                  className="mt-4 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-colors inline-flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">group_add</span> Join Group
+                </button>
+              </div>
+            )}
 
             {/* Feed Posts */}
             <div className="space-y-6">

@@ -15,8 +15,8 @@ export interface UserProfileResponse {
   firstName: string;
   lastName: string;
   bio: string;
-  profileImageUrl: string;
-  avatarUrl?: string;
+  profileImageUrl?: string;
+  avatarUrl: string;
   isFollowing?: boolean;
   followerCount?: number;
   isAcceptingCommissions?: boolean;
@@ -107,8 +107,22 @@ function SearchContent() {
               <div className="flex gap-6 overflow-x-auto pb-4 hide-scrollbar">
                 {searchResults.users.map(user => (
                   <div key={user.id} className="min-w-[200px] bg-slate-50 dark:bg-slate-900 rounded-2xl p-6 text-center border border-slate-200 dark:border-white/10 hover:border-indigo-500/50 transition-colors cursor-pointer group">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl mb-4 overflow-hidden">
-                      {user.profileImageUrl ? <img src={user.profileImageUrl} alt={user.username} className="w-full h-full object-cover" /> : user.username.charAt(0)}
+                    <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl mb-4 overflow-hidden relative group">
+                      {user.avatarUrl ? (
+                        <img 
+                          src={user.avatarUrl} 
+                          alt={user.username} 
+                          className="w-full h-full object-cover" 
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.parentElement) {
+                              e.currentTarget.parentElement.innerText = user.username.charAt(0).toUpperCase();
+                            }
+                          }}
+                        />
+                      ) : (
+                        user.username.charAt(0).toUpperCase()
+                      )}
                     </div>
                     <h3 className="font-bold dark:text-white group-hover:text-indigo-500 transition-colors truncate">{user.username}</h3>
                     <p className="text-sm text-slate-500 truncate">{user.firstName} {user.lastName}</p>

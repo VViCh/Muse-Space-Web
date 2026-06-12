@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useRef, KeyboardEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 
 export default function VerifyOtpPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +71,12 @@ export default function VerifyOtpPage() {
         });
 
         if (response.data?.success) {
-          router.push('/login');
+          const redirectPath = searchParams.get('redirect');
+          if (redirectPath) {
+            router.push(`/login?redirect=${encodeURIComponent(redirectPath)}`);
+          } else {
+            router.push('/login');
+          }
         } else {
           setError(response.data?.message || "Verification failed");
         }

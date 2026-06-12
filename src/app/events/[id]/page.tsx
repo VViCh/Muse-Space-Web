@@ -1,16 +1,46 @@
-"use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function EventDetails() {
   const params = useParams();
   const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
   const router = useRouter();
+  const { isAuthenticated, showAuthModal } = useAuth();
   const [isRsvped, setIsRsvped] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [attendeeCount, setAttendeeCount] = useState(42);
+  const [attendeeCount, setAttendeeCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [eventData, setEventData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEventDetails = async () => {
+      try {
+        const response = await api.get(`/events/${id}`);
+        if (response.data?.isSuccess) {
+          const data = response.data.data;
+          setEventData(data);
+          setAttendeeCount(data.rsvpCount || 0);
+          // Determine if RSVPed by checking my-rsvps (since the backend doesn't seem to return it in the single event API if unauthenticated)
+          if (isAuthenticated) {
+             const rsvpRes = await api.get('/events/my-rsvps');
+             if (rsvpRes.data?.isSuccess) {
+                const rsvps = rsvpRes.data.data.items || rsvpRes.data.data;
+                setIsRsvped(rsvps.some((e: any) => e.id === data.id));
+             }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch event", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (id) fetchEventDetails();
+  }, [id, isAuthenticated]);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -19,25 +49,35 @@ export default function EventDetails() {
   });
 
   const handleRsvp = () => {
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
     if (!isRsvped) {
       setShowRegisterModal(true);
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName || !formData.email || !formData.agree) return;
     
     setIsSubmitting(true);
-    // Simulate API POST /api/events/register
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await api.post(`/events/${id}/rsvp`);
       setIsRsvped(true);
       setShowRegisterModal(false);
       setShowSuccessModal(true);
       setAttendeeCount(prev => prev + 1);
-    }, 1000);
+    } catch (err) {
+      console.error("RSVP failed", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoading) return <div className="p-8 text-center text-slate-500">Loading event details...</div>;
+  if (!eventData) return <div className="p-8 text-center text-red-500">Event not found</div>;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -46,52 +86,48 @@ export default function EventDetails() {
       </button>
 
       {/* Event Banner */}
-      <div className="w-full h-64 md:h-96 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-100 dark:border-white/10 mb-8 overflow-hidden relative shadow-sm dark:shadow-none">
-        <img 
-          src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200&auto=format&fit=crop&q=80" 
-          alt="Event Cover" 
-          className="absolute inset-0 w-full h-full object-cover z-0"
-        />
+      <div className="w-full h-64 md:h-96 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-100 dark:border-white/10 mb-8 overflow-hidden relative shadow-sm dark:shadow-none flex items-center justify-center">
+        {eventData.bannerUrl ? (
+          <img 
+            src={eventData.bannerUrl} 
+            alt="Event Cover" 
+            className="absolute inset-0 w-full h-full object-cover z-0"
+          />
+        ) : (
+          <span className="material-symbols-outlined text-9xl text-indigo-300 opacity-20 absolute z-0">event</span>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/40 dark:from-[#0c0f0f] dark:via-[#0c0f0f]/40 to-transparent z-10" />
         <div className="absolute bottom-8 left-8 z-20">
           <div className="text-white font-bold uppercase tracking-wider mb-2 flex items-center gap-2" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
             <span className="material-symbols-outlined text-sm">calendar_month</span>
-            OCT 24 • 8:00 PM EST
+            {new Date(eventData.startDateUtc).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-2 font-['Space_Grotesk']">Galactic Art Showcase {id}</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-2 font-['Space_Grotesk']">{eventData.title}</h1>
           <p className="text-slate-600 dark:text-slate-300 text-lg flex items-center gap-2 font-medium">
-            <span className="material-symbols-outlined text-sm">location_on</span>
-            Virtual Exhibition Hall
+            <span className="material-symbols-outlined text-sm">{eventData.isOnline ? 'videocam' : 'location_on'}</span>
+            {eventData.isOnline ? 'Virtual Exhibition' : eventData.location}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none rounded-2xl p-8">
+          <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none rounded-2xl p-8 whitespace-pre-wrap">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">About This Event</h2>
             <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-4">
-              Join us for an exclusive gathering of the brightest digital creators across the galaxy. This event will feature live painting sessions, Q&A panels with renowned artists, and a collaborative canvas where everyone can contribute.
-            </p>
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-              Don't forget to bring your creative energy. All skill levels are welcome!
+              {eventData.description}
             </p>
           </div>
 
           <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none rounded-2xl p-8">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Guest Speakers</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[1, 2].map((speaker) => (
-                <div key={speaker} className="flex items-center gap-4 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-100 dark:border-white/5 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-colors">
-                  <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-500/20 border-2 border-indigo-200 dark:border-indigo-500/30 overflow-hidden">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWmy5Q4ovxN33Th-UGPn98NuvbII0lCPqmH900zYzCXD2mP6WnfsQYg5CyX8rf4tFNtD3EAcK7_vZu3h2MU_Gzi_YsraaLm89EtjkvWOclLf5f7DaiQ6yFiTF5zMb4P_tGqBFSwGcuJdefW5lWWa40l0ig7vMzrnaymQADnuGMjTvqBGxuaz_Ds9JqY1j1zgLWtXElciJZpSH4VQ1En6cYqRdHG1FU-2qPyfeqf01eITZydAYUO7SFxaTcPpAabjipbkR5ZqVqdRs" alt="Speaker" />
-                  </div>
-                  <div>
-                    <h4 className="text-slate-900 dark:text-white font-bold">Astro Creator {speaker}</h4>
-                    <p className="text-indigo-600 dark:text-slate-400 text-xs font-medium">Digital Pioneer</p>
-                  </div>
-                </div>
-              ))}
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Organizer</h2>
+            <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-100 dark:border-white/5">
+              <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-500/20 border-2 border-indigo-200 dark:border-indigo-500/30 overflow-hidden flex items-center justify-center">
+                <span className="material-symbols-outlined text-indigo-400">person</span>
+              </div>
+              <div>
+                <h4 className="text-slate-900 dark:text-white font-bold">{eventData.organizerUsername || "Organizer"}</h4>
+              </div>
             </div>
           </div>
         </div>

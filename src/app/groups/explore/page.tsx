@@ -1,27 +1,65 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+
+interface Group {
+  id: number;
+  name: string;
+  description: string;
+  memberCount: number;
+  isMember: boolean;
+  bannerUrl: string;
+}
 
 export default function GroupsExplore() {
-  const [groups, setGroups] = useState([
-    { id: 1, name: "Digital Pioneers", description: "A community for 3D and digital artists pushing boundaries.", members: 1204, isMember: false, iconUrl: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=150&auto=format&fit=crop&q=60" },
-    { id: 2, name: "Abstract Visionaries", description: "Exploring the depths of non-representational art forms.", members: 856, isMember: false, iconUrl: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=150&auto=format&fit=crop&q=60" },
-    { id: 3, name: "Pixel Perfect", description: "Retro aesthetics, pixel art, and low-res wonders.", members: 2100, isMember: false, iconUrl: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=150&auto=format&fit=crop&q=60" },
-    { id: 4, name: "Concept Artists Hub", description: "World building, character design, and environment art.", members: 3450, isMember: true, icon: "brush" },
-    { id: 5, name: "UI/UX Innovators", description: "Designing the future of interfaces and experiences.", members: 512, isMember: false, icon: "web" },
-    { id: 6, name: "Animation Studios", description: "Bringing static art to life with motion.", members: 890, isMember: false, icon: "animation" },
-    { id: 7, name: "Voxel Builders", description: "Creating intricate worlds block by block.", members: 154, isMember: false, icon: "view_in_ar" },
-    { id: 8, name: "Generative Art", description: "Code and algorithms meets artistic expression.", members: 2200, isMember: false, icon: "memory" }
-  ]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, showAuthModal } = useAuth();
 
-  const handleJoin = (id: number) => {
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const response = await api.get('/groups');
+        if (response.data?.isSuccess) {
+          setGroups(response.data.data.items || response.data.data);
+        }
+      } catch (err) {
+        console.error("Failed to load groups", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchGroups();
+  }, []);
+
+  const handleJoin = async (id: number) => {
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
     setGroups(groups.map(g => {
       if (g.id === id) {
-        return { ...g, isMember: true, members: g.members + 1 };
+        return { ...g, isMember: true, memberCount: g.memberCount + 1 };
       }
       return g;
     }));
+    try {
+      await api.post(`/groups/${id}/join`);
+    } catch (e) {
+      setGroups(groups.map(g => {
+        if (g.id === id) {
+          return { ...g, isMember: false, memberCount: g.memberCount - 1 };
+        }
+        return g;
+      }));
+    }
   };
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-slate-500">Loading groups...</div>;
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -31,21 +69,21 @@ export default function GroupsExplore() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {groups.map((group) => (
+        {groups.length > 0 ? groups.map((group) => (
           <div key={group.id} className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200 dark:border-white/10 p-6 rounded-2xl flex flex-col gap-4 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0 overflow-hidden">
-                {group.iconUrl ? (
-                  <img src={group.iconUrl} alt={group.name} className="w-full h-full object-cover" />
+                {group.bannerUrl ? (
+                  <img src={group.bannerUrl} alt={group.name} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="material-symbols-outlined text-indigo-600 dark:text-indigo-400">{group.icon}</span>
+                  <span className="material-symbols-outlined text-indigo-600 dark:text-indigo-400">group</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-slate-900 dark:text-white font-bold text-lg truncate">{group.name}</h3>
                 <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">group</span>
-                  {group.members.toLocaleString()} Members
+                  {group.memberCount?.toLocaleString()} Members
                 </div>
               </div>
             </div>
@@ -68,7 +106,11 @@ export default function GroupsExplore() {
               )}
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="col-span-full py-20 text-center text-slate-500">
+            <p>No active groups found.</p>
+          </div>
+        )}
       </div>
     </div>
   );

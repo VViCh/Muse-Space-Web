@@ -10,8 +10,22 @@ export default function AdminPanel() {
   
   const [stats, setStats] = useState<any>(null);
   const [reports, setReports] = useState<any[]>([]);
-  const [tab, setTab] = useState<'overview' | 'reports'>('overview');
+  const [tab, setTab] = useState<'overview' | 'reports' | 'events'>('overview');
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Event Creation State
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    description: '',
+    startDateUtc: '',
+    endDateUtc: '',
+    location: '',
+    isOnline: true,
+    eventUrl: '',
+    bannerUrl: ''
+  });
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [eventMessage, setEventMessage] = useState<{type: 'error'|'success', text: string} | null>(null);
 
   useEffect(() => {
     // Basic protection: if not logged in
@@ -52,6 +66,29 @@ export default function AdminPanel() {
     }
   };
 
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreatingEvent(true);
+    setEventMessage(null);
+    try {
+      const res = await api.post('/events', {
+        ...eventForm,
+        startDateUtc: new Date(eventForm.startDateUtc).toISOString(),
+        endDateUtc: new Date(eventForm.endDateUtc).toISOString()
+      });
+      if (res.data?.isSuccess) {
+        setEventMessage({ type: 'success', text: 'Event created successfully!' });
+        setEventForm({ title: '', description: '', startDateUtc: '', endDateUtc: '', location: '', isOnline: true, eventUrl: '', bannerUrl: '' });
+      } else {
+        setEventMessage({ type: 'error', text: 'Failed to create event.' });
+      }
+    } catch (err: any) {
+      setEventMessage({ type: 'error', text: err.response?.data?.message || 'Error creating event' });
+    } finally {
+      setIsCreatingEvent(false);
+    }
+  };
+
   if (isLoading) return <div className="text-center p-12 text-slate-500">Loading admin panel...</div>;
   if (!stats) return <div className="text-center p-12 text-red-500">Access Denied or Failed to load.</div>;
 
@@ -82,6 +119,12 @@ export default function AdminPanel() {
           {stats.pendingReports > 0 && (
             <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">{stats.pendingReports}</span>
           )}
+        </button>
+        <button
+          onClick={() => setTab('events')}
+          className={`px-6 py-3 font-bold border-b-2 transition-colors ${tab === 'events' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+        >
+          Create Event
         </button>
       </div>
 
@@ -185,6 +228,66 @@ export default function AdminPanel() {
               <p className="text-slate-500 dark:text-slate-400">There are no pending reports in the moderation queue.</p>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'events' && (
+        <div className="bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 rounded-2xl p-8 max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold font-['Space_Grotesk'] text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <span className="material-symbols-outlined text-indigo-500">event</span>
+            Create New Event
+          </h2>
+          
+          {eventMessage && (
+            <div className={`p-4 mb-6 rounded-xl flex items-center gap-3 ${eventMessage.type === 'success' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'}`}>
+              <span className="material-symbols-outlined">{eventMessage.type === 'success' ? 'check_circle' : 'error'}</span>
+              <p className="font-medium text-sm">{eventMessage.text}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleCreateEvent} className="space-y-5 text-slate-900 dark:text-white">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Event Title *</label>
+              <input required type="text" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="E.g., Global Digital Art Expo" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Description *</label>
+              <textarea required value={eventForm.description} onChange={e => setEventForm({...eventForm, description: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all h-32 resize-none" placeholder="Details about the event..." />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Start Date & Time *</label>
+                <input required type="datetime-local" value={eventForm.startDateUtc} onChange={e => setEventForm({...eventForm, startDateUtc: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">End Date & Time *</label>
+                <input required type="datetime-local" value={eventForm.endDateUtc} onChange={e => setEventForm({...eventForm, endDateUtc: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
+              <input type="checkbox" id="isOnline" checked={eventForm.isOnline} onChange={e => setEventForm({...eventForm, isOnline: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+              <label htmlFor="isOnline" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">This is an online event</label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">{eventForm.isOnline ? 'Stream URL / Link' : 'Physical Location'}</label>
+              <input type="text" value={eventForm.location} onChange={e => setEventForm({...eventForm, location: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder={eventForm.isOnline ? "https://zoom.us/..." : "123 Main St..."} />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Banner Image URL</label>
+              <input type="url" value={eventForm.bannerUrl} onChange={e => setEventForm({...eventForm, bannerUrl: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="https://..." />
+            </div>
+
+            <div className="pt-4">
+              <button disabled={isCreatingEvent} type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                {isCreatingEvent ? 'Creating Event...' : 'Publish Event'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

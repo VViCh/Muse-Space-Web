@@ -4,9 +4,11 @@ import { useArtwork, type Artwork } from '../context/ArtworkContext';
 interface ArtworkCardProps {
   artwork: Artwork;
   onClick: (artwork: Artwork) => void;
+  onLike?: (id: number) => void;
+  onSave?: (id: number) => void;
 }
 
-export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
+export default function ArtworkCard({ artwork, onClick, onLike, onSave }: ArtworkCardProps) {
   const { toggleLike, toggleSave } = useArtwork();
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -63,7 +65,11 @@ export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
           {/* Quick Action Buttons */}
           <div className="flex gap-2">
             <button 
-              onClick={(e) => { e.stopPropagation(); toggleLike(artwork.id); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                toggleLike(artwork.id); 
+                if (onLike) onLike(artwork.id); 
+              }}
               className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-all duration-300 backdrop-blur-md ${
                 artwork.isLiked 
                   ? 'bg-[#FF2257] scale-110' 
@@ -81,7 +87,11 @@ export default function ArtworkCard({ artwork, onClick }: ArtworkCardProps) {
               )}
             </button>
             <button 
-              onClick={(e) => { e.stopPropagation(); toggleSave(artwork.id); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                toggleSave(artwork.id); 
+                if (onSave) onSave(artwork.id);
+              }}
               className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-all duration-300 backdrop-blur-md ${
                 artwork.isBookmarked 
                   ? 'bg-[#845EF7] scale-110' 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useArtwork, type Artwork } from '../context/ArtworkContext';
+import { useAuth } from '../context/AuthContext';
 import CommentSection from './CommentSection';
 import MasonryGrid from './MasonryGrid';
 import ArtworkCard from './ArtworkCard';
@@ -16,6 +17,7 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
   const { t } = useTranslation();
   const router = useRouter();
   const { toggleLike, toggleSave, toggleFollow } = useArtwork();
+  const { user } = useAuth();
   const [isCopied, setIsCopied] = useState(false);
 
   // Similar Artworks State
@@ -83,6 +85,25 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
     });
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this artwork?")) return;
+    try {
+      const res = await api.delete(`/Artwork/${artwork.id}`);
+      if (res.data?.isSuccess) {
+        window.alert("Artwork deleted successfully.");
+        onClose();
+        // Ideally we should also remove it from the ArtworkContext state, 
+        // but for now forcing a reload or letting the user refresh is simplest.
+        window.location.reload();
+      } else {
+        window.alert("Failed to delete artwork.");
+      }
+    } catch (err) {
+      console.error(err);
+      window.alert("An error occurred while deleting.");
+    }
+  };
+
   const handleArtworkClick = (clickedArtwork: Artwork) => {
     // Change URL and trigger navigation without full refresh if possible
     window.history.pushState(null, '', `/?post=${clickedArtwork.id}`);
@@ -120,11 +141,21 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
           {/* Sidebar Details Section */}
           <div className="lg:w-1/3 p-8 flex flex-col bg-white dark:bg-slate-900 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl overflow-hidden">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl overflow-hidden shrink-0 relative group">
                 {artwork.creatorProfileImageUrl ? (
-                  <img src={artwork.creatorProfileImageUrl} alt={artwork.creatorUsername} className="w-full h-full object-cover" />
+                  <img 
+                    src={artwork.creatorProfileImageUrl} 
+                    alt={artwork.creatorUsername} 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => { 
+                      e.currentTarget.style.display = 'none'; 
+                      if (e.currentTarget.parentElement) {
+                        e.currentTarget.parentElement.innerText = artwork.creatorUsername?.charAt(0).toUpperCase() || 'A';
+                      }
+                    }} 
+                  />
                 ) : (
-                  artwork.creatorUsername?.charAt(0) || 'A'
+                  artwork.creatorUsername?.charAt(0).toUpperCase() || 'A'
                 )}
               </div>
               <div>
@@ -137,16 +168,26 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
                 >
                   {artwork.creatorUsername}
                 </h3>
-                <button 
-                  onClick={() => toggleFollow(artwork.creatorId)}
-                  className={`font-medium text-sm transition-colors mt-1 ${
-                    artwork.isFollowingCreator 
-                      ? 'text-slate-500 dark:text-slate-400' 
-                      : 'text-indigo-500 hover:underline'
-                  }`}
-                >
-                  {artwork.isFollowingCreator ? 'Following' : 'Follow'}
-                </button>
+                {user?.id === artwork.creatorId ? (
+                  <button 
+                    onClick={handleDelete}
+                    className="font-medium text-sm transition-colors mt-1 text-red-500 hover:text-red-600 hover:underline flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                    Delete Artwork
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => toggleFollow(artwork.creatorId)}
+                    className={`font-medium text-sm transition-colors mt-1 ${
+                      artwork.isFollowingCreator 
+                        ? 'text-slate-500 dark:text-slate-400' 
+                        : 'text-indigo-500 hover:underline'
+                    }`}
+                  >
+                    {artwork.isFollowingCreator ? 'Following' : 'Follow'}
+                  </button>
+                )}
               </div>
             </div>
 

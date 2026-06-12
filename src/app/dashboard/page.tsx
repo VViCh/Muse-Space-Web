@@ -35,6 +35,8 @@ export default function Dashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [userArtworks, setUserArtworks] = useState<any[]>([]);
+  const [likedArtworks, setLikedArtworks] = useState<any[]>([]);
+  const [savedArtworks, setSavedArtworks] = useState<any[]>([]);
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -42,19 +44,29 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const statsRes = await api.get('/dashboard/stats');
-        if (statsRes.data?.isSuccess) setStats(statsRes.data.data);
+        const statsRes = await api.get('/dashboard/stats').catch(() => null);
+        if (statsRes?.data?.isSuccess) setStats(statsRes.data.data);
 
-        const [commsRes, eventsRes, groupsRes, userArtworksRes] = await Promise.all([
-          api.get('/commissions/requested'),
-          api.get('/events'),
-          api.get('/groups'),
-          api.get(`/artwork/user/${user?.id || 0}`)
+        const fetchSafe = (url: string) => api.get(url).catch((err) => {
+          console.error(`Failed to fetch ${url}`, err);
+          return null;
+        });
+
+        const [commsRes, eventsRes, groupsRes, userArtworksRes, likedRes, savedRes] = await Promise.all([
+          fetchSafe('/commissions/requested'),
+          fetchSafe('/events/my-rsvps'),
+          fetchSafe('/groups'),
+          fetchSafe(`/Artwork/user/${user?.id || 0}`),
+          fetchSafe('/Artwork/liked'),
+          fetchSafe('/Artwork/bookmarked')
         ]);
-        if (commsRes.data?.isSuccess) setCommissions(commsRes.data.data.items || []);
-        if (eventsRes.data?.isSuccess) setEvents(eventsRes.data.data.items || eventsRes.data.data || []);
-        if (groupsRes.data?.isSuccess) setGroups(groupsRes.data.data.items || groupsRes.data.data || []);
-        if (userArtworksRes.data?.isSuccess) setUserArtworks(userArtworksRes.data.data.items || userArtworksRes.data.data || []);
+
+        if (commsRes?.data?.isSuccess) setCommissions(commsRes.data.data.items || []);
+        if (eventsRes?.data?.isSuccess) setEvents(eventsRes.data.data.items || eventsRes.data.data || []);
+        if (groupsRes?.data?.isSuccess) setGroups(groupsRes.data.data.items || groupsRes.data.data || []);
+        if (userArtworksRes?.data?.isSuccess) setUserArtworks(userArtworksRes.data.data.items || userArtworksRes.data.data || []);
+        if (likedRes?.data?.isSuccess) setLikedArtworks(likedRes.data.data.items || []);
+        if (savedRes?.data?.isSuccess) setSavedArtworks(savedRes.data.data.items || []);
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       }
@@ -78,7 +90,7 @@ export default function Dashboard() {
 
   const displayedArtworks = collectionTab === 'my_artworks' 
     ? userArtworks 
-    : artworks.filter(art => collectionTab === 'liked' ? art.isLiked : art.isBookmarked);
+    : collectionTab === 'liked' ? likedArtworks : savedArtworks;
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-12">
@@ -330,7 +342,20 @@ export default function Dashboard() {
             items={displayedArtworks}
             renderItem={(item) => (
               <div key={item.id}>
-                <ArtworkCard artwork={item} onClick={setSelectedArtwork} />
+                <ArtworkCard 
+                  artwork={item} 
+                  onClick={setSelectedArtwork} 
+                  onLike={(id) => {
+                    if (collectionTab === 'liked') {
+                      setLikedArtworks(prev => prev.filter(a => a.id !== id));
+                    }
+                  }}
+                  onSave={(id) => {
+                    if (collectionTab === 'saved') {
+                      setSavedArtworks(prev => prev.filter(a => a.id !== id));
+                    }
+                  }}
+                />
               </div>
             )}
           />

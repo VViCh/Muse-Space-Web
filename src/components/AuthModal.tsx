@@ -27,7 +27,7 @@ export default function AuthModal() {
 
   return (
     <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isAuthModalOpen ? 'opacity-100' : 'opacity-0'}`}
+      className={`fixed inset-0 z-[300] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isAuthModalOpen ? 'opacity-100' : 'opacity-0'}`}
       onClick={closeAuthModal}
     >
       <div 
@@ -61,14 +61,14 @@ export default function AuthModal() {
 
           <div className="flex flex-col w-full gap-4">
             <Link 
-              href="/login" 
+              href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`}
               onClick={closeAuthModal}
               className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-fuchsia-500 hover:from-indigo-400 hover:to-fuchsia-400 text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/25 flex justify-center items-center"
             >
               Log In
             </Link>
             <Link 
-              href="/register" 
+              href={`/register?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`}
               onClick={closeAuthModal}
               className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium rounded-xl transition-all flex justify-center items-center"
             >

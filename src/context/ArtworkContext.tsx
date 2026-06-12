@@ -32,6 +32,9 @@ interface ArtworkContextType {
   artworks: Artwork[];
   isLoading: boolean;
   fetchArtworks: () => Promise<void>;
+  fetchMoreArtworks: () => Promise<void>;
+  hasMore: boolean;
+  isFetchingMore: boolean;
   toggleLike: (id: number) => Promise<void>;
   toggleSave: (id: number) => Promise<void>;
   toggleFollow: (artistId: number) => Promise<void>;
@@ -42,6 +45,9 @@ const ArtworkContext = createContext<ArtworkContextType | undefined>(undefined);
 export function ArtworkProvider({ children }: { children: ReactNode }) {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const { isAuthenticated, showAuthModal } = useAuth();
 
   const fetchArtworks = async () => {
@@ -52,15 +58,43 @@ export function ArtworkProvider({ children }: { children: ReactNode }) {
       // If it's a paginated response like ArtworkFeedResponse
       if (response.data?.isSuccess && response.data?.data?.items) {
         setArtworks(response.data.data.items);
+        setHasMore(response.data.data.hasMore);
+        setNextCursor(response.data.data.nextCursor);
       } else {
         // Fallback or empty
         setArtworks([]);
+        setHasMore(false);
       }
     } catch (error) {
       console.error("Failed to fetch artworks", error);
       setArtworks([]);
+      setHasMore(false);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchMoreArtworks = async () => {
+    if (isFetchingMore || !hasMore || nextCursor === null) return;
+    setIsFetchingMore(true);
+    try {
+      const response = await api.get(`/feed?cursor=${nextCursor}`);
+      if (response.data?.isSuccess && response.data?.data?.items) {
+        setArtworks(prev => {
+          // Avoid duplicates
+          const existingIds = new Set(prev.map(a => a.id));
+          const newItems = response.data.data.items.filter((a: Artwork) => !existingIds.has(a.id));
+          return [...prev, ...newItems];
+        });
+        setHasMore(response.data.data.hasMore);
+        setNextCursor(response.data.data.nextCursor);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Failed to fetch more artworks", error);
+    } finally {
+      setIsFetchingMore(false);
     }
   };
 
@@ -114,7 +148,7 @@ export function ArtworkProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ArtworkContext.Provider value={{ artworks, isLoading, fetchArtworks, toggleLike, toggleSave, toggleFollow }}>
+    <ArtworkContext.Provider value={{ artworks, isLoading, hasMore, isFetchingMore, fetchArtworks, fetchMoreArtworks, toggleLike, toggleSave, toggleFollow }}>
       {children}
     </ArtworkContext.Provider>
   );

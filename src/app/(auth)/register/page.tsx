@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 
 export default function RegisterPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
@@ -43,7 +44,12 @@ export default function RegisterPage() {
         // Backend only registers, it doesn't automatically send OTP. We must trigger it here.
         await api.post('/auth/otp/generate', { email: authEmail, purpose: "EmailVerification" });
         
-        router.push('/verify-otp');
+        const redirectPath = searchParams.get('redirect');
+        if (redirectPath) {
+          router.push(`/verify-otp?redirect=${encodeURIComponent(redirectPath)}`);
+        } else {
+          router.push('/verify-otp');
+        }
       } else {
         setError(response.data?.message || "Registration failed");
       }
@@ -66,7 +72,12 @@ export default function RegisterPage() {
       </div>
       
       <form onSubmit={handleRegister} className="space-y-5">
-        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-4 rounded-xl flex items-start gap-3">
+            <span className="material-symbols-outlined">error</span>
+            <p className="flex-1 mt-0.5">{error}</p>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Username</label>
           <input 
@@ -151,7 +162,7 @@ export default function RegisterPage() {
           <p className="text-sm text-slate-400">
             Already have an account?{' '}
             <Link 
-              href="/login"
+              href={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect') as string)}` : ''}`}
               className="text-indigo-400 hover:text-indigo-300 font-bold transition-colors"
             >
               Sign In

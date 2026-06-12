@@ -98,38 +98,34 @@ export default function CommentSection({ artworkId }: { artworkId: number }) {
           )}
         </div>
         <div className="flex-1 flex flex-col items-end gap-2">
-          <textarea
-            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
-            rows={2}
-            placeholder="Add a comment..."
-            value={newComment}
-            onChange={(e) => {
-              if (!user) {
-                showAuthModal();
-                return;
-              }
-              setNewComment(e.target.value);
-            }}
-            onFocus={(e) => {
-              if (!user) {
-                showAuthModal();
-                e.target.blur();
-              }
-            }}
-          />
-          {error && <p className="text-red-400 text-xs w-full">{error}</p>}
-          <button
-            type={user ? "submit" : "button"}
-            disabled={user ? (isSubmitting || !newComment.trim()) : false}
-            onClick={() => {
-              if (!user) {
-                showAuthModal();
-              }
-            }}
-            className="px-6 py-2 bg-indigo-600 hover:brightness-110 disabled:opacity-50 text-white rounded-lg font-bold text-sm transition-all"
-          >
-            {isSubmitting ? "Posting..." : "Post"}
-          </button>
+          {user ? (
+            <>
+              <textarea
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+                rows={2}
+                placeholder="Add a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+              />
+              {error && <p className="text-red-400 text-xs w-full">{error}</p>}
+              <button
+                type="submit"
+                disabled={isSubmitting || !newComment.trim()}
+                className="px-6 py-2 bg-indigo-600 hover:brightness-110 disabled:opacity-50 text-white rounded-lg font-bold text-sm transition-all"
+              >
+                {isSubmitting ? "Posting..." : "Post"}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={showAuthModal}
+              className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/5 rounded-xl py-4 px-4 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-2 justify-center"
+            >
+              <span className="material-symbols-outlined">login</span>
+              Sign in to comment
+            </button>
+          )}
         </div>
       </form>
 
@@ -137,9 +133,19 @@ export default function CommentSection({ artworkId }: { artworkId: number }) {
       <div className="space-y-6 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
         {comments.map((comment) => (
           <div key={comment.id} className="flex gap-3 group relative">
-            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 font-bold shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 font-bold shrink-0 overflow-hidden relative group">
               {comment.userProfileImageUrl ? (
-                <img src={comment.userProfileImageUrl} alt={comment.username} className="w-full h-full object-cover" />
+                <img 
+                  src={comment.userProfileImageUrl} 
+                  alt={comment.username} 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => { 
+                    e.currentTarget.style.display = 'none'; 
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.innerText = (comment.username || "U").charAt(0).toUpperCase();
+                    }
+                  }}
+                />
               ) : (
                 (comment.username || "U").charAt(0).toUpperCase()
               )}

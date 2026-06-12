@@ -26,11 +26,10 @@ function HomeContent() {
   const query = (searchParams.get('q') || '').toLowerCase();
   const postId = searchParams.get('post');
 
-  const { artworks: allArtworks, isLoading: isContextLoading } = useArtwork();
+  const { artworks: allArtworks, isLoading: isContextLoading, hasMore, isFetchingMore, fetchMoreArtworks } = useArtwork();
 
   const [filteredArtworks, setFilteredArtworks] = useState<Artwork[]>(allArtworks);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
 
   const observer = useRef<IntersectionObserver | null>(null);
@@ -47,39 +46,33 @@ function HomeContent() {
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
-      const filtered = allArtworks.filter(art =>
-        art.title.toLowerCase().includes(query) ||
-        art.tags?.some(tag => tag.name.toLowerCase().includes(query))
-      );
-      setFilteredArtworks(filtered);
+      if (query) {
+        const filtered = allArtworks.filter(art =>
+          art.title.toLowerCase().includes(query) ||
+          art.tags?.some(tag => tag.name.toLowerCase().includes(query))
+        );
+        setFilteredArtworks(filtered);
+      } else {
+        setFilteredArtworks(allArtworks);
+      }
       setIsLoading(false);
-    }, 500);
+    }, 300);
     return () => clearTimeout(timer);
   }, [query, allArtworks]);
 
   const lastArtworkRef = useCallback((node: HTMLDivElement | null) => {
-    if (isLoading || isContextLoading || isFetchingMore || query) return;
+    // If we're loading, fetching more, or currently searching by query, disable infinite scroll
+    if (isLoading || isContextLoading || isFetchingMore || query || !hasMore) return;
     if (observer.current) observer.current.disconnect();
 
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting) {
-        setIsFetchingMore(true);
-        setTimeout(() => {
-          setFilteredArtworks(prev => {
-            const shuffled = [...allArtworks].sort(() => 0.5 - Math.random());
-            const newArtworks = shuffled.map((art, idx) => ({
-              ...art,
-              id: 1000000 + prev.length * 1000 + idx,
-            }));
-            return [...prev, ...newArtworks];
-          });
-          setIsFetchingMore(false);
-        }, 1000);
+        fetchMoreArtworks();
       }
     });
 
     if (node) observer.current.observe(node);
-  }, [isLoading, isContextLoading, isFetchingMore, query, allArtworks]);
+  }, [isLoading, isContextLoading, isFetchingMore, query, hasMore, fetchMoreArtworks]);
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 py-8">

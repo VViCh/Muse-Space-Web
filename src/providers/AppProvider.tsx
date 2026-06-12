@@ -243,7 +243,11 @@ function AppLayout({ children }: { children: ReactNode }) {
               setShowNotifications(false);
             }}
           >
-            <img alt="Profile" className="w-full h-full object-cover bg-slate-200 dark:bg-slate-800" src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" />
+            {user?.profileImageUrl ? (
+              <img alt="Profile" className="w-full h-full object-cover bg-slate-200 dark:bg-slate-800" src={user.profileImageUrl} />
+            ) : (
+              <img alt="Profile" className="w-full h-full object-cover bg-slate-200 dark:bg-slate-800" src={`https://ui-avatars.com/api/?name=${user?.username || 'User'}&background=6366f1&color=fff`} />
+            )}
           </div>
 
           {/* Profile Dropdown */}

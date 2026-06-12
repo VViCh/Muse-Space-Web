@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function LoginPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
   
   const [authEmail, setAuthEmail] = useState('');
@@ -30,7 +31,12 @@ export default function LoginPage() {
 
       if (response.data?.success && response.data?.accessToken) {
         login(response.data.accessToken, response.data.user);
-        router.push('/');
+        const redirectPath = searchParams.get('redirect');
+        if (redirectPath && redirectPath.startsWith('/')) {
+          router.push(redirectPath);
+        } else {
+          router.push('/');
+        }
       } else {
         setError(response.data?.message || "Login failed");
       }
@@ -59,7 +65,12 @@ export default function LoginPage() {
       </div>
       
       <form onSubmit={handleLogin} className="space-y-5">
-        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-4 rounded-xl flex items-start gap-3">
+            <span className="material-symbols-outlined">error</span>
+            <p className="flex-1 mt-0.5">{error}</p>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Email</label>
           <input 
@@ -100,7 +111,7 @@ export default function LoginPage() {
           <p className="text-sm text-slate-400">
             Don't have an account?{' '}
             <Link 
-              href="/register"
+              href={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect') as string)}` : ''}`}
               className="text-indigo-400 hover:text-indigo-300 font-bold transition-colors"
             >
               Sign Up
