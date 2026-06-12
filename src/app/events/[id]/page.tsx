@@ -26,14 +26,7 @@ export default function EventDetails() {
           const data = response.data.data;
           setEventData(data);
           setAttendeeCount(data.rsvpCount || 0);
-          // Determine if RSVPed by checking my-rsvps (since the backend doesn't seem to return it in the single event API if unauthenticated)
-          if (isAuthenticated) {
-             const rsvpRes = await api.get('/events/my-rsvps');
-             if (rsvpRes.data?.isSuccess) {
-                const rsvps = rsvpRes.data.data.items || rsvpRes.data.data;
-                setIsRsvped(rsvps.some((e: any) => e.id === data.id));
-             }
-          }
+          setIsRsvped(data.isRsvped || false);
         }
       } catch (err) {
         console.error("Failed to fetch event", err);

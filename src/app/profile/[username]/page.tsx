@@ -1,9 +1,9 @@
 "use client";
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import Masonry from 'react-masonry-css';
 import MasonryGrid from '@/components/MasonryGrid';
+import ArtworkDetailModal from '@/components/ArtworkDetailModal';
 import { useArtwork, type Artwork } from '@/context/ArtworkContext';
 import { useAuth } from '@/context/AuthContext';
 import ArtworkCard from '@/components/ArtworkCard';
@@ -22,15 +22,15 @@ const MASONRY_BREAKPOINTS = {
 
 export default function ProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const username = Array.isArray(params?.username) ? params.username[0] : (params?.username as string);
   const decodedUsername = username ? decodeURIComponent(username) : '';
   
   const { toggleFollow } = useArtwork();
   const { isAuthenticated, showAuthModal } = useAuth();
 
-  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
-  
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
   const [artistArtworks, setArtistArtworks] = useState<Artwork[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +82,7 @@ export default function ProfilePage() {
         {/* Banner */}
         <div className="h-64 md:h-80 w-full relative">
           <img 
-            src="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80" 
+            src="https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w-4.0.3&auto=format&fit=crop&w=2070&q=80" 
             alt="Profile Banner" 
             className="w-full h-full object-cover"
           />
@@ -170,9 +170,9 @@ export default function ProfilePage() {
                   <span className="font-bold text-slate-800 dark:text-slate-200">Open for Commissions</span>
                 </div>
               </div>
-              <div className="pt-2">
-                <Link href={`/commissions/request?artist=${profile.username}`} className="w-full inline-flex justify-center items-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg transition-colors">
-                  <span className="material-symbols-outlined text-[18px]">design_services</span> Request Commission
+              <div className="flex gap-2 w-full mt-2 lg:mt-0">
+                <Link href={`/commissions/request/${encodeURIComponent(profile.username)}`} className="w-full inline-flex justify-center items-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg transition-colors">
+                  <span className="material-symbols-outlined text-lg">draw</span> Request Commission
                 </Link>
               </div>
             </div>
@@ -208,7 +208,7 @@ export default function ProfilePage() {
                 items={artistArtworks}
                 renderItem={(item) => (
                   <div key={item.id}>
-                    <ArtworkCard artwork={item} onClick={setSelectedArtwork} />
+                    <ArtworkCard artwork={item} onClick={() => setSelectedArtwork(item)} />
                   </div>
                 )}
               />
@@ -230,18 +230,15 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Detail Modal Overlay */}
       {selectedArtwork && (
         <ArtworkDetailModal 
           artwork={selectedArtwork} 
           onClose={() => setSelectedArtwork(null)} 
         />
       )}
+
     </div>
   );
-}
-
-
 
 
 

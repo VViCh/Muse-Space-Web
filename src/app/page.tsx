@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import Masonry from 'react-masonry-css';
 import MasonryGrid from '@/components/MasonryGrid';
@@ -31,6 +31,7 @@ function HomeContent() {
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
+  const router = useRouter();
 
   const observer = useRef<IntersectionObserver | null>(null);
 
@@ -42,6 +43,8 @@ function HomeContent() {
       }
     }
   }, [postId, allArtworks]);
+
+
 
   // Debounce the search query to show a loading state while typing, but don't touch artworks array directly
   useEffect(() => {

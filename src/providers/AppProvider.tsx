@@ -75,7 +75,7 @@ export default function AppProvider({ children }: { children: ReactNode }) {
     <AuthProvider>
       <NotificationProvider>
         {isAuthRoute ? (
-          <main className="min-h-screen w-full flex items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070')] bg-cover bg-center relative">
+          <main className="min-h-screen w-full flex items-center justify-center p-4 bg-[url('https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w')] bg-cover bg-center relative">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-0"></div>
             <Link href="/" className="absolute top-6 left-6 z-20 flex items-center gap-2 text-white/70 hover:text-white transition-colors bg-black/20 hover:bg-black/40 px-4 py-2 rounded-full backdrop-blur-md">
               <span className="material-symbols-outlined">arrow_back</span>

@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useArtwork, type Artwork } from '../context/ArtworkContext';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../context/AuthContext';
+import api from '@/lib/api';
 
 interface ArtworkCardProps {
   artwork: Artwork;
@@ -10,8 +13,23 @@ interface ArtworkCardProps {
 
 export default function ArtworkCard({ artwork, onClick, onLike, onSave }: ArtworkCardProps) {
   const { toggleLike, toggleSave } = useArtwork();
+  const { user } = useAuth();
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const router = useRouter();
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this artwork?")) return;
+    try {
+      const res = await api.delete(`/Artwork/${artwork.id}`);
+      if (res.data?.isSuccess) {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const aspectRatio = artwork.width && artwork.height ? `${artwork.width} / ${artwork.height}` : 'auto';
 
@@ -57,8 +75,10 @@ export default function ArtworkCard({ artwork, onClick, onLike, onSave }: Artwor
       {/* Hover Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col justify-end p-6">
         <div className="flex justify-between items-end">
-          <div>
-            <h3 className="text-white font-bold text-lg leading-tight">{artwork.title}</h3>
+          <div 
+            className="cursor-pointer hover:opacity-80 transition-opacity" 
+          >
+            <h3 className="text-white font-bold text-lg leading-tight hover:underline">{artwork.title}</h3>
             <p className="text-slate-300 text-sm">{artwork.creatorUsername}</p>
           </div>
 
@@ -108,6 +128,15 @@ export default function ArtworkCard({ artwork, onClick, onLike, onSave }: Artwor
                 </svg>
               )}
             </button>
+            {user?.id === artwork.creatorId && (
+              <button 
+                onClick={handleDelete}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all duration-300 backdrop-blur-md bg-red-500/80 hover:bg-red-600/90 ml-1"
+                title="Delete Artwork"
+              >
+                <span className="material-symbols-outlined text-[20px]">delete</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

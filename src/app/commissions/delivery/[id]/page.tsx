@@ -22,7 +22,7 @@ export default function DeliveryPage() {
             id: res.data.data.id,
             artist: res.data.data.artistUsername,
             service: res.data.data.title,
-            artworkUrl: 'https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1200&auto=format&fit=crop'
+            artworkUrl: 'https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w'
           });
           if (res.data.data.status === 5) {
             setIsCompleted(true);

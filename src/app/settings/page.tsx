@@ -16,11 +16,14 @@ export default function Settings() {
   const [isAcceptingCommissions, setIsAcceptingCommissions] = useState(false);
   const [isTogglingCommissions, setIsTogglingCommissions] = useState(false);
 
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       setProfilePhoto(url);
+      setProfilePhotoFile(file);
     }
   };
 
@@ -97,9 +100,32 @@ export default function Settings() {
     setMessage(null);
     try {
       const { default: api } = await import('@/lib/api');
+      
+      let avatarUrlToSave = profilePhoto;
+      
+      // Upload avatar if it's a new file
+      if (profilePhotoFile) {
+        const formData = new FormData();
+        formData.append('file', profilePhotoFile);
+        const uploadRes = await api.post('/users/profile/avatar', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        if (uploadRes.data?.isSuccess) {
+          avatarUrlToSave = uploadRes.data.data;
+          setProfilePhoto(avatarUrlToSave);
+          setProfilePhotoFile(null);
+        } else {
+          setMessage({type: 'error', text: 'Failed to upload avatar image'});
+          setIsSavingProfile(false);
+          return;
+        }
+      }
+
       const res = await api.put('/users/profile', {
         bio: bio,
-        avatarUrl: profilePhoto
+        avatarUrl: avatarUrlToSave
       });
       if (res.data?.isSuccess) {
         setMessage({type: 'success', text: 'Profile saved successfully!'});
@@ -196,7 +222,10 @@ export default function Settings() {
                     </label>
                     
                     <button 
-                      onClick={() => setProfilePhoto('')}
+                      onClick={() => {
+                        setProfilePhoto('');
+                        setProfilePhotoFile(null);
+                      }}
                       className="px-6 py-3 bg-slate-200 dark:bg-white/5 hover:bg-slate-300 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-transparent dark:border-white/10 rounded-xl font-bold transition-all"
                     >
                       Remove

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import * as signalR from '@microsoft/signalr';
 
 export default function GroupDetails() {
   const params = useParams();
@@ -55,6 +56,52 @@ export default function GroupDetails() {
       }
     };
     if (id) fetchGroupData();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const token = localStorage.getItem('token');
+    const newConnection = new signalR.HubConnectionBuilder()
+      .withUrl(process.env.NEXT_PUBLIC_API_URL?.replace('/api', '/hubs/groupchat') || 'http://localhost:5242/hubs/groupchat', {
+        accessTokenFactory: () => token || '',
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    newConnection.start()
+      .then(() => {
+        newConnection.invoke('JoinGroup', id.toString());
+        
+        newConnection.on('ReceiveMessage', (p: any) => {
+          const newPost = {
+            id: p.id,
+            author: p.authorUsername || 'User',
+            time: p.createdAtUtc ? new Date(p.createdAtUtc).toLocaleDateString() : 'Just now',
+            content: p.content,
+            image: undefined,
+            likes: 0,
+            comments: 0,
+            userLiked: false,
+            userSaved: false
+          };
+          setPosts(prev => {
+            // Deduplicate if we already added it locally
+            if (prev.find(post => post.id === newPost.id)) return prev;
+            return [newPost, ...prev];
+          });
+        });
+      })
+      .catch(err => console.error('SignalR Group Chat Connection Error: ', err));
+
+    return () => {
+      if (newConnection.state === signalR.HubConnectionState.Connected) {
+        newConnection.invoke('LeaveGroup', id.toString())
+          .finally(() => newConnection.stop());
+      } else {
+        newConnection.stop();
+      }
+    };
   }, [id]);
 
   const handleJoinGroup = async () => {
@@ -152,17 +199,17 @@ export default function GroupDetails() {
   const handleSimulateAttachImage = () => {
     // Simulate attaching an image
     if (!attachedImage) {
-      setAttachedImage("https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1000&auto=format&fit=crop");
+      setAttachedImage("https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w");
     } else {
       setAttachedImage(null);
     }
   };
 
   const recentImages = [
-    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=500&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=500&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=500&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop"
+    "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w",
+    "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w",
+    "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w",
+    "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w"
   ];
 
   if (isLoading || !group) {
@@ -603,7 +650,7 @@ export default function GroupDetails() {
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {[...recentImages, "https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=500&auto=format&fit=crop", "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=500&auto=format&fit=crop", "https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=500&auto=format&fit=crop", "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=500&auto=format&fit=crop", "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=500&auto=format&fit=crop"].map((img, idx) => (
+                {[...recentImages, "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w", "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w", "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w", "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w", "https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w"].map((img, idx) => (
                   <div key={idx} className="aspect-square rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 cursor-pointer group relative">
                     <img src={img} alt={`Gallery item ${idx}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">

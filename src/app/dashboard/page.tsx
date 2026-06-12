@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Masonry from 'react-masonry-css';
 import MasonryGrid from '@/components/MasonryGrid';
-import { useArtwork } from '@/context/ArtworkContext';
+import { useArtwork, type Artwork } from '@/context/ArtworkContext';
 import ArtworkCard from '@/components/ArtworkCard';
 import ArtworkDetailModal from '@/components/ArtworkDetailModal';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -26,7 +26,6 @@ export default function Dashboard() {
 
   const { artworks } = useArtwork();
   const { user } = useAuth();
-  const [selectedArtwork, setSelectedArtwork] = useState<any>(null);
   const [collectionTab, setCollectionTab] = useState<'my_artworks' | 'liked' | 'saved'>('my_artworks');
   const [showTicketModal, setShowTicketModal] = useState<any>(null);
   
@@ -37,6 +36,7 @@ export default function Dashboard() {
   const [userArtworks, setUserArtworks] = useState<any[]>([]);
   const [likedArtworks, setLikedArtworks] = useState<any[]>([]);
   const [savedArtworks, setSavedArtworks] = useState<any[]>([]);
+  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -100,6 +100,13 @@ export default function Dashboard() {
           <p className="text-slate-600 dark:text-slate-400">Manage your metrics, commissions, and activities.</p>
         </div>
       </div>
+
+      {selectedArtwork && (
+        <ArtworkDetailModal 
+          artwork={selectedArtwork} 
+          onClose={() => setSelectedArtwork(null)} 
+        />
+      )}
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -374,13 +381,7 @@ export default function Dashboard() {
         )}
       </section>
 
-      {/* Detail Modal Overlay */}
-      {selectedArtwork && (
-        <ArtworkDetailModal 
-          artwork={selectedArtwork} 
-          onClose={() => setSelectedArtwork(null)} 
-        />
-      )}
+
 
       {/* Digital Ticket Modal */}
       {showTicketModal && (
@@ -409,7 +410,7 @@ export default function Dashboard() {
               
               {/* Ticket Header Image */}
               <div className="h-32 bg-indigo-600 relative">
-                <div className="absolute inset-0 opacity-30 mix-blend-overlay pointer-events-none" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=500&auto=format&fit=crop')" }}></div>
+                <div className="absolute inset-0 opacity-30 mix-blend-overlay pointer-events-none" style={{ backgroundImage: "url('https://res.cloudinary.com/dzjoxcvv7/image/upload/v1/muse-space/w7o3q62z017y6d7y0k4w')" }}></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-indigo-900 to-transparent pointer-events-none"></div>
 
                 <div className="absolute bottom-4 left-6 right-6 pointer-events-none">
