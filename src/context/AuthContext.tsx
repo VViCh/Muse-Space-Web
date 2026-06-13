@@ -13,6 +13,7 @@ export interface User {
   lastName: string;
   isActive: boolean;
   isEmailVerified: boolean;
+  role?: string;
   profileImageUrl?: string;
   avatarUrl?: string;
 }
@@ -31,6 +32,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          if (!parsedUser.role) {
+            const decoded = parseJwt(token);
+            if (decoded) {
+              const roleClaim = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded["role"];
+              if (roleClaim) {
+                parsedUser.role = roleClaim;
+                localStorage.setItem('user', JSON.stringify(parsedUser));
+              }
+            }
+          }
+          setUser(parsedUser);
         } else {
           logout();
         }
@@ -64,9 +90,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (token: string, userData: User) => {
+    const finalUserData = { ...userData };
+    if (!finalUserData.role) {
+      const decoded = parseJwt(token);
+      if (decoded) {
+        const roleClaim = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded["role"];
+        if (roleClaim) {
+          finalUserData.role = roleClaim;
+        }
+      }
+    }
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(finalUserData));
+    setUser(finalUserData);
   };
 
   const logout = () => {

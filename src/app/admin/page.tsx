@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPanel() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
   const [stats, setStats] = useState<any>(null);
@@ -28,11 +28,18 @@ export default function AdminPanel() {
   const [eventMessage, setEventMessage] = useState<{type: 'error'|'success', text: string} | null>(null);
 
   useEffect(() => {
-    // Basic protection: if not logged in
-    if (!isAuthenticated) return;
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (user && user.role !== 'Admin') {
+      router.push('/');
+      return;
+    }
     
-    // Usually we would check user.role === 'Admin' but let's just try the API
-    // If it 403s, we will catch it.
     const fetchAdminData = async () => {
       setIsLoading(true);
       try {
@@ -52,7 +59,7 @@ export default function AdminPanel() {
     };
 
     fetchAdminData();
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, authLoading, user, router]);
 
   const handleReviewReport = async (reportId: number, status: string) => {
     try {
@@ -89,7 +96,7 @@ export default function AdminPanel() {
     }
   };
 
-  if (isLoading) return <div className="text-center p-12 text-slate-500">Loading admin panel...</div>;
+  if (authLoading || isLoading) return <div className="text-center p-12 text-slate-500">Loading admin panel...</div>;
   if (!stats) return <div className="text-center p-12 text-red-500">Access Denied or Failed to load.</div>;
 
   return (
