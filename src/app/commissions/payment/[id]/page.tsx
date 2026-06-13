@@ -89,7 +89,7 @@ export default function PaymentPage() {
             <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">{errorMsg}</p>
             <button 
               onClick={fetchOrder}
-              className="w-full py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none hover:bg-indigo-500 text-white rounded-xl font-bold transition-all"
+              className="w-full py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 dark:shadow-none hover:bg-indigo-500 text-white rounded-xl font-bold transition-all"
             >
               Retry
             </button>
@@ -268,7 +268,7 @@ export default function PaymentPage() {
       <div className="mt-auto space-y-3">
         <button 
           onClick={handleConfirmPayment} 
-          className="w-full py-4 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-xl font-bold tracking-wide shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98]"
+          className="w-full py-4 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 dark:shadow-none text-white rounded-xl font-bold tracking-wide shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98]"
         >
           Cek Status Pembayaran
         </button>
@@ -330,7 +330,7 @@ export default function PaymentPage() {
       <div className="w-full mt-auto space-y-3">
         <button 
           onClick={() => setPaymentState('checkout')} 
-          className="w-full py-4 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold tracking-wide shadow-lg transition-all"
+          className="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 text-white rounded-xl font-bold tracking-wide shadow-lg transition-all"
         >
           Coba Lagi
         </button>
@@ -345,7 +345,7 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#060913] relative overflow-hidden flex flex-col items-center py-12 px-4 font-['Space_Grotesk'] text-slate-900 dark:text-slate-200 transition-colors duration-300">
       {/* Animated Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-500/10 dark:bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none/20 rounded-full blur-[120px] animate-pulse"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-500/10 dark:bg-indigo-600/20 rounded-full blur-[120px] animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-cyan-500/10 dark:bg-cyan-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
       <div className="absolute top-[20%] right-[10%] w-32 h-32 border border-indigo-500/10 dark:border-cyan-500/20 rounded-lg rotate-45 animate-[spin_20s_linear_infinite]"></div>
       <div className="absolute bottom-[20%] left-[10%] w-24 h-24 border border-indigo-500/10 dark:border-indigo-500/20 rounded-full animate-[ping_5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>

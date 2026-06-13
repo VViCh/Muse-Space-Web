@@ -142,7 +142,7 @@ export default function UploadPage() {
 
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Artwork File</label>
-          <label className="block border-2 border-dashed border-slate-300 dark:border-indigo-500/30 rounded-xl overflow-hidden text-center hover:border-indigo-500 hover:bg-indigo-50 dark:/10 transition-all cursor-pointer relative group">
+          <label className="block border-2 border-dashed border-slate-300 dark:border-indigo-500/30 rounded-xl overflow-hidden text-center hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-white/5 transition-all cursor-pointer relative group">
             <input 
               type="file" 
               accept="image/*" 

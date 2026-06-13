@@ -282,7 +282,7 @@ export default function PostPage() {
                 <Link 
                   key={tag.id} 
                   href={`/?q=${encodeURIComponent(tag.name)}`}
-                  className="px-5 py-2 bg-slate-50 dark:bg-slate-800/50 dark:text-slate-300 rounded-xl text-sm font-semibold hover:bg-indigo-50 dark:/30 hover:text-indigo-600 transition-colors border border-slate-200 dark:border-white/5"
+                  className="px-5 py-2 bg-slate-50 dark:bg-slate-800/50 dark:text-slate-300 rounded-xl text-sm font-semibold hover:bg-indigo-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-slate-200 transition-colors border border-slate-200 dark:border-white/5"
                 >
                   #{tag.name}
                 </Link>
