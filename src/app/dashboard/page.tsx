@@ -201,7 +201,10 @@ export default function Dashboard() {
                 <span className="material-symbols-outlined text-emerald-500">design_services</span>
                 My Commission Requests
               </h2>
-              <Link href="/commissions" className="text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:underline">Browse Artists</Link>
+              <div className="flex gap-3">
+                <Link href="/commissions/list" className="text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:underline">View All Commissions</Link>
+                <Link href="/commissions" className="text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:underline">Browse Artists</Link>
+              </div>
             </div>
             
             <div className="bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden">
