@@ -168,7 +168,7 @@ const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist, onC
           {!isArtist && c.status === 1 && (
             <button 
               onClick={(e) => { e.stopPropagation(); onPayNow?.(); }}
-              className="text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-md shadow-indigo-500/20 transition-colors"
+              className="text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-md shadow-indigo-500/20 transition-colors"
             >
               <span className="material-symbols-outlined text-[13px]">payments</span>
               Pay now
@@ -340,7 +340,7 @@ export default function CommissionsListPage() {
             </div>
             <Link
               href="/commissions"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-[1.02] transition-all text-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-[1.02] transition-all text-sm"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
               Find Artists
@@ -467,7 +467,7 @@ export default function CommissionsListPage() {
                   : 'Enable commissions in your settings to start receiving orders.'}
               </p>
               {activeTab === 'requested' && (
-                <Link href="/commissions" className="mt-5 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)]">
+                <Link href="/commissions" className="mt-5 px-6 py-2.5 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none text-white rounded-xl font-bold text-sm transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)]">
                   Browse Artists
                 </Link>
               )}

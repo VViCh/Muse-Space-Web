@@ -260,7 +260,7 @@ export default function GroupDetails() {
           {!group.isMember && group.role !== 'admin' && group.role !== 'creator' ? (
             <button 
               onClick={handleJoinGroup}
-              className="px-6 py-2 rounded-xl bg-indigo-600  text-white font-bold shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-colors"
+              className="px-6 py-2 rounded-xl bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white font-bold shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-colors"
             >
               Join Group
             </button>
@@ -276,7 +276,7 @@ export default function GroupDetails() {
 
         {/* Group Avatar & Info (Overlapping) */}
         <div className="absolute -bottom-16 left-8 flex items-end gap-6 z-20">
-          <div className="w-32 h-32 rounded-2xl bg-indigo-100 dark:bg-indigo-600 border-4 border-slate-50 dark:border-[#0c0f0f] shadow-xl flex items-center justify-center overflow-hidden relative group shrink-0">
+          <div className="w-32 h-32 rounded-2xl bg-indigo-100 dark:bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none border-4 border-slate-50 dark:border-[#0c0f0f] shadow-xl flex items-center justify-center overflow-hidden relative group shrink-0">
             <img src={group.avatarUrl} alt="Group Avatar" className="w-full h-full object-cover" />
           </div>
           <div className="pb-4">
@@ -407,7 +407,7 @@ export default function GroupDetails() {
                     <button 
                       onClick={handlePostSubmit}
                       disabled={(!postText.trim() && !attachedImage) || isUploading}
-                      className="px-5 py-2 bg-indigo-600  text-white rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(79,70,229,0.3)] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                      className="px-5 py-2 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(79,70,229,0.3)] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                     >
                       {isUploading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                       Post
@@ -513,7 +513,7 @@ export default function GroupDetails() {
                 </div>
                 <button 
                   onClick={handleJoinGroup}
-                  className="px-6 py-2.5 rounded-xl bg-indigo-600  text-white font-bold shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-colors inline-flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white font-bold shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-colors inline-flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-[18px]">group_add</span> Join Group
                 </button>
@@ -667,7 +667,7 @@ export default function GroupDetails() {
                 Done
               </button>
             ) : settingsView !== 'manageMembers' ? (
-              <button onClick={handleSaveSettings} className="w-full py-3 bg-indigo-600  text-white rounded-xl font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-colors mt-2">
+              <button onClick={handleSaveSettings} className="w-full py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-xl font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-colors mt-2">
                 Save Changes
               </button>
             ) : null}
@@ -764,7 +764,7 @@ export default function GroupDetails() {
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/10 shrink-0">
               <div className="flex gap-3">
                 <input type="text" placeholder="Reply to thread..." className="flex-1 bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500" />
-                <button className="px-4 py-2.5 bg-indigo-600  text-white rounded-xl font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all">Reply</button>
+                <button className="px-4 py-2.5 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-xl font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all">Reply</button>
               </div>
             </div>
           </div>

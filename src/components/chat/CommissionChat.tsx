@@ -262,7 +262,7 @@ export default function CommissionChat({ commissionId, mode, onClose, onToggleFu
             <button
               type="submit"
               disabled={(!newMessage.trim() && !attachment) || isUploading}
-              className="p-2.5 bg-indigo-600 disabled:opacity-50 text-white rounded-xl shadow-lg shadow-indigo-500/20 transition-all shrink-0 flex items-center justify-center"
+              className="p-2.5 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none disabled:opacity-50 text-white rounded-xl shadow-lg shadow-indigo-500/20 transition-all shrink-0 flex items-center justify-center"
             >
               {isUploading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

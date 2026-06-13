@@ -166,7 +166,7 @@ export default function PostPage() {
                 setImageLoaded(false);
                 setImageRetryKey(prev => prev + 1);
               }}
-              className="px-6 py-2.5 bg-indigo-600  text-white rounded-xl font-bold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+              className="px-6 py-2.5 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-xl font-bold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)]"
             >
               <span className="material-symbols-outlined text-[20px]">refresh</span> Retry Loading
             </button>

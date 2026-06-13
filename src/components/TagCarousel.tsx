@@ -98,7 +98,7 @@ export default function TagCarousel() {
           }}
           className={`px-5 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-all shrink-0 snap-start select-none ${
             !currentQuery
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+              ? "bg-indigo-600 dark:bg-white text-white dark:text-slate-900 shadow-md shadow-indigo-500/20 dark:shadow-none"
               : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
           }`}
         >
@@ -112,7 +112,7 @@ export default function TagCarousel() {
               onClick={() => handleTagClick(tag.name)}
               className={`px-5 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-all shrink-0 snap-start select-none ${
                 isActive
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                  ? "bg-indigo-600 dark:bg-white text-white dark:text-slate-900 shadow-md shadow-indigo-500/20 dark:shadow-none"
                   : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >

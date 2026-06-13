@@ -70,7 +70,7 @@ export default function EventsExplore() {
               
               <div className="mt-auto">
                 <Link href={`/events/${event.id}`}
-                  className="w-full py-2.5 bg-indigo-600  text-white rounded-xl text-sm font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-colors text-center block"
+                  className="w-full py-2.5 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-xl text-sm font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-colors text-center block"
                 >
                   {t('events.rsvp_now', 'RSVP Now')}
                 </Link>

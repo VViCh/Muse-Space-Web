@@ -230,7 +230,7 @@ export default function Workspace() {
               {activeOrder.status === 0 && (
                 <>
                   {isArtist && (
-                    <button onClick={() => handleUpdateStatus(1)} className="w-full px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20">
+                    <button onClick={() => handleUpdateStatus(1)} className="w-full px-4 py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none text-white font-bold rounded-xl hover:bg-indigo-700 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-indigo-500/20">
                       Accept Order
                     </button>
                   )}
@@ -251,7 +251,7 @@ export default function Workspace() {
                     </button>
                   )}
                   {isArtist && (
-                    <button onClick={() => handleUpdateStatus(4)} className="w-full px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20">
+                    <button onClick={() => handleUpdateStatus(4)} className="w-full px-4 py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none text-white font-bold rounded-xl hover:bg-indigo-700 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-indigo-500/20">
                       Start Working
                     </button>
                   )}

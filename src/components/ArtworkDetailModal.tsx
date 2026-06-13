@@ -147,7 +147,7 @@ export default function ArtworkDetailModal({ artwork, onClose }: ArtworkDetailMo
                 <p>Failed to load image</p>
                 <button 
                   onClick={() => { setHasImageError(false); setImageRetryCount(c => c + 1); }}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 font-bold transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none text-white rounded-xl hover:bg-indigo-500 font-bold transition-colors flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined">refresh</span>
                   Retry Loading

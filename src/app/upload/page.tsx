@@ -81,7 +81,7 @@ export default function UploadPage() {
     return (
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold dark:text-white mb-4">Sign in to upload artwork</h2>
-        <button onClick={() => router.push('/login')} className="bg-indigo-600 text-white px-6 py-2 rounded-xl">Sign In</button>
+        <button onClick={() => router.push('/login')} className="bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none text-white px-6 py-2 rounded-xl">Sign In</button>
       </div>
     );
   }
@@ -173,7 +173,7 @@ export default function UploadPage() {
           <button 
             type="submit" 
             disabled={isSubmitting || !file || !title}
-            className="bg-indigo-600  disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100 flex items-center gap-2"
+            className="bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100 flex items-center gap-2"
           >
             {isSubmitting ? <span className="material-symbols-outlined animate-spin">refresh</span> : null}
             {isSubmitting ? 'Uploading...' : 'Submit Artwork'}

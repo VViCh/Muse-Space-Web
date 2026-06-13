@@ -129,7 +129,7 @@ export default function VerifyOtpPage() {
         <button 
           type="submit"
           disabled={otp.join('').length !== 6 || isLoading}
-          className="w-full py-3 mt-2 bg-indigo-600  disabled:opacity-50 disabled: disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100 flex items-center justify-center gap-2"
+          className="w-full py-3 mt-2 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  disabled:opacity-50 disabled: disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:shadow-none transition-all hover:scale-[1.02] disabled:hover:scale-100 flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <span className="material-symbols-outlined animate-spin">refresh</span>

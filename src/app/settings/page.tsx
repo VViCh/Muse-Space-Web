@@ -250,7 +250,7 @@ export default function Settings() {
                   <p className="text-slate-600 dark:text-slate-400">Upload a new photo to change your avatar.</p>
                   
                   <div className="flex gap-4">
-                    <label className="cursor-pointer px-6 py-3 bg-indigo-600  text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2">
+                    <label className="cursor-pointer px-6 py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2">
                       <span className="material-symbols-outlined text-sm">upload</span>
                       Upload Image
                       <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
@@ -458,7 +458,7 @@ export default function Settings() {
           <button 
             onClick={handleSaveProfile}
             disabled={isSavingProfile}
-            className="px-8 py-3 bg-indigo-600  text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all hover:scale-[1.02] disabled:opacity-50">
+            className="px-8 py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all hover:scale-[1.02] disabled:opacity-50">
             {isSavingProfile ? 'Saving...' : 'Save Settings'}
           </button>
         </div>

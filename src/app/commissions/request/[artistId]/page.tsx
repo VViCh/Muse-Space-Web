@@ -108,7 +108,7 @@ export default function RequestCommission() {
         <p className="text-slate-600 dark:text-slate-300 text-lg mb-8">This artist is currently not accepting new commission requests.</p>
         <button 
           onClick={() => router.push(`/profile/${encodeURIComponent(artistUser.username)}`)}
-          className="px-8 py-3 bg-indigo-600 border border-transparent text-white rounded-lg shadow-lg transition-all font-bold"
+          className="px-8 py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none border border-transparent text-white rounded-lg shadow-lg transition-all font-bold"
         >
           Back to Profile
         </button>
@@ -138,7 +138,7 @@ export default function RequestCommission() {
         <div className="flex gap-4">
           <button 
             onClick={() => router.push('/dashboard')}
-            className="px-8 py-3 bg-indigo-600  border border-transparent text-white rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all font-bold flex items-center gap-2"
+            className="px-8 py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  border border-transparent text-white rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all font-bold flex items-center gap-2"
           >
             <span className="material-symbols-outlined">dashboard</span>
             View Order History
@@ -223,7 +223,7 @@ export default function RequestCommission() {
           {/* For Demo Purposes */}
           <button 
             onClick={() => router.push('/workspace/ord_456')}
-            className="px-8 py-3 bg-indigo-600  text-white rounded-lg shadow-lg shadow-indigo-500/20 transition-all font-bold flex items-center justify-center gap-2"
+            className="px-8 py-3 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  text-white rounded-lg shadow-lg shadow-indigo-500/20 transition-all font-bold flex items-center justify-center gap-2"
             title="Demo tool: go to workspace"
           >
             <span className="material-symbols-outlined text-base">magic_button</span>
@@ -275,7 +275,7 @@ export default function RequestCommission() {
             <button 
               type="submit" 
               disabled={!paymentMethod}
-              className="w-full py-4 bg-indigo-600  disabled:opacity-50 disabled: text-white rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all"
+              className="w-full py-4 bg-indigo-600 dark:bg-white dark:text-slate-900 dark:shadow-none  disabled:opacity-50 disabled: text-white rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all"
             >
               Confirm & Pay
             </button>
