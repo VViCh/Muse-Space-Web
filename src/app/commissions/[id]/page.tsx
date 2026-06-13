@@ -82,7 +82,7 @@ export default function Workspace() {
     if (!newMessage.trim() || !activeOrder) return;
 
     try {
-      const res = await api.post(`/commissions/${activeOrder.id}/messages`, { content: newMessage });
+      const res = await api.post(`/commissions/${activeOrder.id}/messages`, { Content: newMessage });
       if (res.data?.isSuccess) {
         setMessages([...messages, res.data.data]);
         setNewMessage('');
