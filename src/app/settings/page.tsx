@@ -9,6 +9,9 @@ export default function Settings() {
   const { i18n } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const [profilePhoto, setProfilePhoto] = useState('https://lh3.googleusercontent.com/aida-public/AB6AXuDWmy5Q4ovxN33Th-UGPn98NuvbII0lCPqmH900zYzCXD2mP6WnfsQYg5CyX8rf4tFNtD3EAcK7_vZu3h2MU_Gzi_YsraaLm89EtjkvWOclLf5f7DaiQ6yFiTF5zMb4P_tGqBFSwGcuJdefW5lWWa40l0ig7vMzrnaymQADnuGMjTvqBGxuaz_Ds9JqY1j1zgLWtXElciJZpSH4VQ1En6cYqRdHG1FU-2qPyfeqf01eITZydAYUO7SFxaTcPpAabjipbkR5ZqVqdRs');
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [bannerUrl, setBannerUrl] = useState('');
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bio, setBio] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
@@ -16,14 +19,21 @@ export default function Settings() {
   const [isAcceptingCommissions, setIsAcceptingCommissions] = useState(false);
   const [isTogglingCommissions, setIsTogglingCommissions] = useState(false);
 
-  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       setProfilePhoto(url);
       setProfilePhotoFile(file);
+    }
+  };
+
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setBannerUrl(url);
+      setBannerFile(file);
     }
   };
 
@@ -56,11 +66,14 @@ export default function Settings() {
       import('@/lib/api').then(({ default: api }) => {
         api.get(`/users/${user.id}/profile`)
           .then(res => {
-            if (res.data?.isSuccess) {
+            if (res.data?.isSuccess && res.data.data) {
               setIsAcceptingCommissions(res.data.data.isAcceptingCommissions || false);
               setBio(res.data.data.bio || '');
               if (res.data.data.avatarUrl) {
                 setProfilePhoto(res.data.data.avatarUrl);
+              }
+              if (res.data.data.bannerUrl) {
+                setBannerUrl(res.data.data.bannerUrl);
               }
             }
           })
@@ -102,6 +115,7 @@ export default function Settings() {
       const { default: api } = await import('@/lib/api');
       
       let avatarUrlToSave = profilePhoto;
+      let bannerUrlToSave = bannerUrl;
       
       // Upload avatar if it's a new file
       if (profilePhotoFile) {
@@ -123,9 +137,30 @@ export default function Settings() {
         }
       }
 
+      // Upload banner if it's a new file
+      if (bannerFile) {
+        const formData = new FormData();
+        formData.append('file', bannerFile);
+        const uploadRes = await api.post('/media/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        if (uploadRes.data?.isSuccess) {
+          bannerUrlToSave = uploadRes.data.data.url;
+          setBannerUrl(bannerUrlToSave);
+          setBannerFile(null);
+        } else {
+          setMessage({type: 'error', text: 'Failed to upload banner image'});
+          setIsSavingProfile(false);
+          return;
+        }
+      }
+
       const res = await api.put('/users/profile', {
         bio: bio,
-        avatarUrl: avatarUrlToSave
+        avatarUrl: avatarUrlToSave,
+        bannerUrl: bannerUrlToSave
       });
       if (res.data?.isSuccess) {
         setMessage({type: 'success', text: 'Profile saved successfully!'});
@@ -349,6 +384,37 @@ export default function Settings() {
                       placeholder={i18n.language === 'id' ? 'Sesuai dengan buku tabungan' : 'As it appears on bank statement'}
                       className={`w-full bg-slate-950/50 border ${paymentData.accountHolder.trim() === '' ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500' : 'border-[#D4AF37]/30 focus:border-[#D4AF37] focus:ring-[#D4AF37]'} rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:ring-1 transition-all placeholder:text-slate-600`}
                     />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Profile Banner</label>
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="w-full sm:w-64 h-32 rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 shadow-sm relative">
+                      {bannerUrl ? (
+                        <img src={bannerUrl} alt="Banner Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                          <span className="material-symbols-outlined text-4xl">image</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-3 w-full">
+                      <label className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-indigo-500/30 hover:border-indigo-500 dark:hover:border-indigo-500 text-slate-900 dark:text-white rounded-xl font-bold cursor-pointer transition-all text-center shadow-sm">
+                        Change Banner
+                        <input type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
+                      </label>
+                      
+                      <button 
+                        onClick={() => {
+                          setBannerUrl('');
+                          setBannerFile(null);
+                        }}
+                        className="px-6 py-3 bg-slate-200 dark:bg-white/5 hover:bg-slate-300 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-transparent dark:border-white/10 rounded-xl font-bold transition-all"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
 

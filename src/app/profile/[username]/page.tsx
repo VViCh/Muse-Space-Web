@@ -86,7 +86,7 @@ export default function ProfilePage() {
         {/* Banner */}
         <div className="h-64 md:h-80 w-full relative">
           <img 
-            src="https://res.cloudinary.com/dzpv8dz7e/image/upload/v1780888547/rrxgc4xrzgk3rtnpcytz.jpg-4.0.3&auto=format&fit=crop&w=2070&q=80" 
+            src={profile.bannerUrl || "https://res.cloudinary.com/dzpv8dz7e/image/upload/v1780888547/rrxgc4xrzgk3rtnpcytz.jpg-4.0.3&auto=format&fit=crop&w=2070&q=80"} 
             alt="Profile Banner" 
             className="w-full h-full object-cover"
           />
@@ -181,11 +181,13 @@ export default function ProfilePage() {
                   <span className="font-bold text-slate-800 dark:text-slate-200">Open for Commissions</span>
                 </div>
               </div>
-              <div className="flex gap-2 w-full mt-2 lg:mt-0">
-                <Link href={`/commissions/request/${encodeURIComponent(profile.username)}`} className="w-full inline-flex justify-center items-center gap-2 py-3 bg-indigo-600  text-white rounded-xl font-bold shadow-lg transition-colors">
-                  <span className="material-symbols-outlined text-lg">draw</span> Request Commission
-                </Link>
-              </div>
+                <div className="flex gap-2 w-full mt-2 lg:mt-0">
+                  {profile.isAcceptingCommissions && (
+                    <Link href={`/commissions/request/${encodeURIComponent(profile.username)}`} className="w-full inline-flex justify-center items-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg transition-colors">
+                      <span className="material-symbols-outlined text-lg">draw</span> Request Commission
+                    </Link>
+                  )}
+                </div>
             </div>
           </section>
           )}
@@ -195,18 +197,21 @@ export default function ProfilePage() {
         <div className="lg:col-span-2 space-y-8">
           
           {/* Mobile CTA */}
-          <Link href={`/commissions/request/${encodeURIComponent(profile.username)}`}
-            onClick={(e) => {
-              if (!isAuthenticated) {
-                e.preventDefault();
-                showAuthModal();
-              }
-            }}
-            className="mt-6 md:hidden w-full py-4 bg-indigo-600  text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex justify-center items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-base">shopping_cart_checkout</span>
-            Request Commission
-          </Link>
+          {profile.isAcceptingCommissions && (
+            <Link 
+              href={`/commissions/request/${encodeURIComponent(profile.username)}`}
+              onClick={(e) => {
+                if (!isAuthenticated) {
+                  e.preventDefault();
+                  showAuthModal();
+                }
+              }}
+              className="mt-6 md:hidden w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex justify-center items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base">shopping_cart_checkout</span>
+              Request Commission
+            </Link>
+          )}
 
           {/* Artworks Grid (Portfolio) */}
           <section className="bg-transparent">

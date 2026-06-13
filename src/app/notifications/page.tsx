@@ -28,7 +28,7 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     try {
       const response = await api.get('/notifications?page=1&pageSize=50');
-      if (response.data.success) {
+      if (response.data.isSuccess) {
         setNotifications(response.data.data.items);
       }
     } catch (err: any) {
@@ -143,7 +143,10 @@ export default function NotificationsPage() {
                 </div>
                 {!notification.isRead && (
                   <button 
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markAsRead(notification.id);
+                    }}
                     className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                     title="Mark as read"
                   >

@@ -33,7 +33,8 @@ if (!i18n.isInitialized) {
 
 const MENU_ITEMS = [
   { path: '/', labelKey: 'layout.nav_home', defaultLabel: 'Home', icon: 'home', exactMatch: true, matchPrefixes: ['/'] },
-  { path: '/commissions', labelKey: 'layout.nav_commissions', defaultLabel: 'Commissions', icon: 'stadium', exactMatch: false, matchPrefixes: ['/commissions'] },
+  { path: '/commissions', labelKey: 'layout.nav_commissions', defaultLabel: 'Commissions', icon: 'stadium', exactMatch: true, matchPrefixes: ['/commissions'] },
+  { path: '/commissions/list', labelKey: 'layout.nav_messages', defaultLabel: 'Messages', icon: 'chat', exactMatch: false, matchPrefixes: ['/commissions/list'], requiresAuth: true },
   { path: '/groups', labelKey: 'layout.nav_groups', defaultLabel: 'Groups & Events', icon: 'groups', exactMatch: false, matchPrefixes: ['/groups', '/events'] },
   { path: '/dashboard', labelKey: 'layout.nav_activities', defaultLabel: 'Dashboard', icon: 'dashboard', exactMatch: false, matchPrefixes: ['/dashboard'], requiresAuth: true },
   { path: '/search', labelKey: 'layout.nav_search', defaultLabel: 'Search', icon: 'search', exactMatch: false, matchPrefixes: ['/search'] }
@@ -102,9 +103,10 @@ function AppLayout({ children }: { children: ReactNode }) {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   
   const { user, isAuthenticated, logout } = useAuth();
-  const { notifications, unreadCount, markAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const searchQuery = searchParams.get('q') || '';
 
   useEffect(() => {
@@ -205,12 +207,35 @@ function AppLayout({ children }: { children: ReactNode }) {
           {/* Notifications Dropdown */}
           {showNotifications && (
             <div className="absolute top-12 right-12 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-indigo-500/30 rounded-xl shadow-2xl overflow-hidden z-50 animate-[fadeIn_0.2s_ease-out]">
-              <div className="p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/50 flex justify-between items-center">
-                <h3 className="text-slate-900 dark:text-white font-bold font-['Space_Grotesk']">Notifications</h3>
-                <Link href="/notifications" onClick={() => setShowNotifications(false)} className="text-xs text-indigo-500 hover:underline">View All</Link>
+              <div className="p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/50 flex flex-col gap-3">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-slate-900 dark:text-white font-bold font-['Space_Grotesk']">Notifications</h3>
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button onClick={markAllAsRead} className="text-xs text-indigo-500 hover:underline flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">done_all</span> Mark All
+                      </button>
+                    )}
+                    <Link href="/notifications" onClick={() => setShowNotifications(false)} className="text-xs text-indigo-500 hover:underline ml-2">View All</Link>
+                  </div>
+                </div>
+                <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-lg w-full">
+                  <button 
+                    onClick={() => setShowUnreadOnly(false)}
+                    className={`flex-1 py-1 text-xs font-medium rounded-md transition-colors ${!showUnreadOnly ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                  >
+                    All
+                  </button>
+                  <button 
+                    onClick={() => setShowUnreadOnly(true)}
+                    className={`flex-1 py-1 text-xs font-medium rounded-md transition-colors ${showUnreadOnly ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                  >
+                    Unread
+                  </button>
+                </div>
               </div>
               <div className="max-h-96 overflow-y-auto custom-scrollbar">
-                {notifications.length > 0 ? notifications.map(notif => (
+                {notifications.filter(n => showUnreadOnly ? !n.isRead : true).length > 0 ? notifications.filter(n => showUnreadOnly ? !n.isRead : true).map(notif => (
                   <div 
                     key={notif.id} 
                     onClick={() => {
@@ -222,8 +247,21 @@ function AppLayout({ children }: { children: ReactNode }) {
                     }}
                     className={`p-4 border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer ${notif.isRead ? 'opacity-70' : 'bg-indigo-50/50 dark:bg-indigo-500/10'}`}
                   >
-                    <p className="text-sm text-slate-900 dark:text-white font-medium mb-1">{notif.message}</p>
-                    <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-2 uppercase tracking-wider">
+                    <div className="flex justify-between items-start gap-2">
+                      <p className="text-sm text-slate-900 dark:text-white font-medium mb-1 line-clamp-2">{notif.message}</p>
+                      {!notif.isRead && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsRead(notif.id);
+                          }}
+                          className="p-1 text-slate-400 hover:text-indigo-600 transition-colors shrink-0"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">check</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-1 uppercase tracking-wider">
                       {new Date(notif.createdAtUtc).toLocaleString()}
                     </p>
                   </div>
@@ -272,7 +310,7 @@ function AppLayout({ children }: { children: ReactNode }) {
                     <Link href={`/profile/${user?.username}`} onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
                       <span className="material-symbols-outlined text-[18px]">person</span> Profile
                     </Link>
-                    <Link href="/dashboard" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
+                    <Link href="/commissions/list" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">
                       <span className="material-symbols-outlined text-[18px]">design_services</span> My Commissions
                     </Link>
                     <Link href="/settings" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3">

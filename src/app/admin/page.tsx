@@ -25,7 +25,31 @@ export default function AdminPanel() {
     bannerUrl: ''
   });
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [eventMessage, setEventMessage] = useState<{type: 'error'|'success', text: string} | null>(null);
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingBanner(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post('/media/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (response.data?.isSuccess) {
+        setEventForm({ ...eventForm, bannerUrl: response.data.data.url });
+      }
+    } catch (err) {
+      console.error('Failed to upload banner', err);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -35,9 +59,15 @@ export default function AdminPanel() {
       return;
     }
 
-    if (user && user.role !== 'Admin') {
-      router.push('/');
-      return;
+    if (user) {
+      const hasAdminRole = Array.isArray(user.role) 
+        ? user.role.includes('Admin') 
+        : user.role === 'Admin';
+        
+      if (!hasAdminRole) {
+        router.push('/');
+        return;
+      }
     }
     
     const fetchAdminData = async () => {
@@ -291,8 +321,30 @@ export default function AdminPanel() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Banner Image URL</label>
-              <input type="url" value={eventForm.bannerUrl} onChange={e => setEventForm({...eventForm, bannerUrl: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="https://..." />
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Banner Image</label>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden shrink-0">
+                  {isUploadingBanner ? (
+                    <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                  ) : eventForm.bannerUrl ? (
+                    <img src={eventForm.bannerUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="material-symbols-outlined text-slate-400">image</span>
+                  )}
+                </div>
+                <label className="flex-1 cursor-pointer">
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl px-4 py-3 text-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Click to upload image</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerUpload}
+                    disabled={isUploadingBanner}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="pt-4">

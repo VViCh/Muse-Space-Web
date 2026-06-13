@@ -404,6 +404,21 @@ export default function Workspace() {
                   <button onClick={() => handleUpdateStatus(1)} className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all">Accept</button>
                   <button onClick={() => handleUpdateStatus(3)} className="flex-1 py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold transition-all">Reject</button>
                 </div>
+             ) : activeOrder.status === 2 && isArtist ? (
+                <button 
+                  onClick={async () => {
+                    try {
+                      await api.post(`/payments/${activeOrder.id}/verify`);
+                      setActiveOrder({ ...activeOrder, status: 4 });
+                    } catch (err) {
+                      console.error('Failed to verify payment', err);
+                    }
+                  }}
+                  className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
+                >
+                  <span className="material-symbols-outlined">verified</span>
+                  Verify Payment Received
+                </button>
              ) : activeOrder.status === 4 && isArtist ? (
                <Link 
                  href={`/commissions/delivery/${activeOrder.id}`}
@@ -412,13 +427,13 @@ export default function Workspace() {
                  <span className="material-symbols-outlined">inventory_2</span>
                  Deliver Artwork
                </Link>
-             ) : activeOrder.status === 1 && !isArtist ? (
+             ) : (activeOrder.status === 1 || activeOrder.status === 2) && !isArtist ? (
                  <Link 
                    href={`/commissions/payment/${activeOrder.id}`}
                    className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
                  >
                    <span className="material-symbols-outlined">payments</span>
-                   Pay Now (${activeOrder.price})
+                   {activeOrder.status === 2 ? 'Payment Pending Verification' : `Pay Now ($${activeOrder.price})`}
                  </Link>
              ) : (
                <button className="w-full py-4 bg-slate-200 dark:bg-white/5 text-slate-400 dark:text-slate-500 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2">

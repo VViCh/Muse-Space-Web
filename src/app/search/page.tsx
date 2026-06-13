@@ -17,9 +17,10 @@ export interface UserProfileResponse {
   bio: string;
   profileImageUrl?: string;
   avatarUrl: string;
+  bannerUrl?: string;
+  isAcceptingCommissions?: boolean;
   isFollowing?: boolean;
   followerCount?: number;
-  isAcceptingCommissions?: boolean;
 }
 
 export interface TagResponse {

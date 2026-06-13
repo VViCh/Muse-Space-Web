@@ -35,6 +35,7 @@ export default function GroupsPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupAvatarUrl, setNewGroupAvatarUrl] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -63,15 +64,39 @@ export default function GroupsPage() {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post('/media/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (response.data?.isSuccess) {
+        setNewGroupAvatarUrl(response.data.data.url);
+      }
+    } catch (err) {
+      console.error('Failed to upload avatar', err);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGroupName.trim() || !newGroupDesc.trim()) return;
 
     try {
+      const finalAvatarUrl = newGroupAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(newGroupName)}&background=random&color=fff&size=128`;
       const response = await api.post('/groups', {
         name: newGroupName,
         description: newGroupDesc,
-        avatarUrl: newGroupAvatarUrl,
+        avatarUrl: finalAvatarUrl,
         isPrivate: false
       });
       if (response.data?.isSuccess) {
@@ -242,14 +267,31 @@ export default function GroupsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Group Icon URL (Optional)</label>
-                <input
-                  type="url"
-                  value={newGroupAvatarUrl}
-                  onChange={(e) => setNewGroupAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/icon.png"
-                  className="w-full bg-slate-50 dark:bg-slate-950/50 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-500 dark:placeholder:text-slate-600"
-                />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Group Icon (Optional)</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
+                    {isUploadingAvatar ? (
+                      <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                    ) : newGroupAvatarUrl ? (
+                      <img src={newGroupAvatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="material-symbols-outlined text-slate-400">image</span>
+                    )}
+                  </div>
+                  <label className="flex-1 cursor-pointer">
+                    <div className="w-full bg-slate-50 dark:bg-slate-950/50 border border-slate-300 dark:border-white/10 border-dashed rounded-xl px-4 py-3 text-center hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                      <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Click to upload image</span>
+                      <p className="text-xs text-slate-500 mt-1">Leave empty for auto-generated icon</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={isUploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
 
               <div className="pt-4 flex gap-3">

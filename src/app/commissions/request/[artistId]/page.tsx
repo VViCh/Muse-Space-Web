@@ -98,6 +98,24 @@ export default function RequestCommission() {
     }
   };
 
+  if (artistUser && !artistUser.isAcceptingCommissions) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-2xl mx-auto px-4">
+        <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mb-6">
+          <span className="material-symbols-outlined text-4xl text-red-500 dark:text-red-400">block</span>
+        </div>
+        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4 font-['Space_Grotesk']">Not Accepting Commissions</h1>
+        <p className="text-slate-600 dark:text-slate-300 text-lg mb-8">This artist is currently not accepting new commission requests.</p>
+        <button 
+          onClick={() => router.push(`/profile/${encodeURIComponent(artistUser.username)}`)}
+          className="px-8 py-3 bg-indigo-600 border border-transparent text-white rounded-lg shadow-lg transition-all font-bold"
+        >
+          Back to Profile
+        </button>
+      </div>
+    );
+  }
+
   if (step === 'success') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-2xl mx-auto px-4">

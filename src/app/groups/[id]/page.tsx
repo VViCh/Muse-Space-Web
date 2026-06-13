@@ -228,7 +228,22 @@ export default function GroupDetails() {
     return <div className="max-w-6xl mx-auto py-12 text-center text-slate-500">Loading group...</div>;
   }
 
-  const recentImages = posts.filter(p => p.image && p.attachmentType?.startsWith('image/')).map(p => p.image);
+  const isImageAttachment = (p: any) => {
+    if (p.attachmentType?.startsWith('image/')) return true;
+    if (!p.attachmentType && p.image?.match(/\.(jpeg|jpg|gif|png|webp)$/i)) return true;
+    // Cloudinary default fallback since legacy posts are usually images
+    if (!p.attachmentType && p.image?.includes('cloudinary.com/dzpv8dz7e/image/')) return true;
+    return false;
+  };
+
+  const isVideoAttachment = (p: any) => {
+    if (p.attachmentType?.startsWith('video/')) return true;
+    if (!p.attachmentType && p.image?.match(/\.(mp4|webm|ogg)$/i)) return true;
+    if (!p.attachmentType && p.image?.includes('cloudinary.com/dzpv8dz7e/video/')) return true;
+    return false;
+  };
+
+  const recentImages = posts.filter(p => p.image && isImageAttachment(p)).map(p => p.image);
 
   return (
     <div className="max-w-6xl mx-auto pb-12">
@@ -436,9 +451,9 @@ export default function GroupDetails() {
                     
                     {post.image && (
                       <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 mb-4 bg-slate-950 max-h-[400px] flex items-center justify-center relative group">
-                        {post.attachmentType?.startsWith('image/') ? (
+                        {isImageAttachment(post) ? (
                           <img src={post.image} alt="Post attachment" className="w-full h-full object-contain max-h-[400px] cursor-pointer" onClick={() => window.open(post.image, '_blank')} />
-                        ) : post.attachmentType?.startsWith('video/') ? (
+                        ) : isVideoAttachment(post) ? (
                           <video src={post.image} controls className="w-full h-full max-h-[400px] object-contain" />
                         ) : (
                           <div className="w-full bg-slate-100 dark:bg-slate-800 p-6 flex flex-col items-center justify-center text-center">
