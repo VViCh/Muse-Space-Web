@@ -44,7 +44,7 @@ The repository follows a clean, component-driven architecture designed for high 
 ### Landing Page & Discovery Feed
 Features a masonry grid of trending artworks and a draggable tag carousel for seamless filtering.
 <p align="center">
-  <img src="[INSERT_LANDING_PAGE_IMAGE_URL_HERE]" alt="Landing Page" width="700">
+  <img src="https://ibb.co.com/Cp6ZvfHv" alt="Landing Page" width="700">
 </p>
 
 ### Authentication
