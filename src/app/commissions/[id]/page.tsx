@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { useNotification } from '@/context/NotificationContext';
+import { useNotifications } from '@/context/NotificationContext';
 
 export default function Workspace() {
   const params = useParams();
@@ -12,7 +12,7 @@ export default function Workspace() {
   const orderId = rawOrderId;
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { notifications } = useNotification();
+  const { notifications } = useNotifications();
   
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [activeOrder, setActiveOrder] = useState<any | null>(null);
