@@ -42,6 +42,7 @@ function SearchContent() {
   const [searchResults, setSearchResults] = useState<SearchResponse>({ artworks: [], users: [], tags: [] });
   const [isLoading, setIsLoading] = useState(false);
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'artwork' | 'user' | 'tag'>('all');
 
   useEffect(() => {
     let isMounted = true;
@@ -56,7 +57,8 @@ function SearchContent() {
       
       setIsLoading(true);
       try {
-        const response = await api.get(`/search?query=${encodeURIComponent(query)}`);
+        const typeParam = activeTab === 'all' ? '' : `&type=${activeTab}`;
+        const response = await api.get(`/search?query=${encodeURIComponent(query)}${typeParam}`);
         if (isMounted && response.data?.isSuccess) {
           setSearchResults(response.data.data);
         }
@@ -78,19 +80,35 @@ function SearchContent() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, activeTab]);
 
   return (
     <div className="max-w-7xl mx-auto py-8 animate-[fadeIn_0.3s_ease-out]">
       {query ? (
-        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-8 font-['Space_Grotesk']">
+        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-6 font-['Space_Grotesk']">
           Search Results for "{query}"
         </h1>
       ) : (
-        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-8 font-['Space_Grotesk']">
+        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-6 font-['Space_Grotesk']">
           Search Explore
         </h1>
       )}
+
+      <div className="flex gap-2 mb-8 overflow-x-auto pb-2 custom-scrollbar">
+        {(['all', 'artwork', 'user', 'tag'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all whitespace-nowrap ${
+              activeTab === tab 
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md' 
+                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
+      </div>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -98,9 +116,9 @@ function SearchContent() {
             <div key={i} className="h-80 rounded-2xl bg-slate-200 animate-pulse dark:bg-slate-800" />
           ))}
         </div>
-      ) : searchResults.artworks.length > 0 || searchResults.users.length > 0 ? (
+      ) : searchResults.artworks.length > 0 || searchResults.users.length > 0 || searchResults.tags.length > 0 ? (
         <div className="space-y-12">
-          {searchResults.users.length > 0 && (
+          {(activeTab === 'all' || activeTab === 'user') && searchResults.users.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold dark:text-white mb-6 flex items-center gap-2">
                 <span className="material-symbols-outlined text-indigo-500">group</span> Artists
@@ -133,7 +151,7 @@ function SearchContent() {
             </div>
           )}
 
-          {searchResults.artworks.length > 0 && (
+          {(activeTab === 'all' || activeTab === 'artwork') && searchResults.artworks.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold dark:text-white mb-6 flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-500">photo_library</span> Artworks

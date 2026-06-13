@@ -1,34 +1,24 @@
 "use client";
-import { useRouter, useParams } from "next/navigation";
-import { useState, useRef, useEffect, useCallback } from "react";
-import Link from "next/link";
-import api from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
-import { useNotifications } from "@/context/NotificationContext";
+import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import CommissionChat from '@/components/chat/CommissionChat';
 
 export default function Workspace() {
   const params = useParams();
-  const rawOrderId = Array.isArray(params?.id)
-    ? params.id[0]
-    : (params?.id as string);
+  const rawOrderId = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
   const orderId = rawOrderId;
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { notifications } = useNotifications();
-
+  
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [activeOrder, setActiveOrder] = useState<any | null>(null);
 
-  const [messages, setMessages] = useState<any[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      router.push('/login');
     }
   }, [user, authLoading, router]);
 
@@ -37,507 +27,175 @@ export default function Workspace() {
     const fetchOrders = async () => {
       try {
         const [reqRes, recRes] = await Promise.all([
-          api.get("/commissions/requested?pageSize=100"),
-          api.get("/commissions/received?pageSize=100"),
+          api.get('/commissions/requested?pageSize=100'),
+          api.get('/commissions/received?pageSize=100')
         ]);
         const reqOrders = reqRes.data?.data?.items || [];
         const recOrders = recRes.data?.data?.items || [];
         const combined = [...reqOrders, ...recOrders];
         setActiveOrders(combined);
-
+        
         if (orderId) {
-          const current = combined.find(
-            (o: any) => o.id.toString() === orderId,
-          );
+          const current = combined.find((o: any) => o.id.toString() === orderId);
           if (current) {
             setActiveOrder(current);
-          } else if (orderId !== "request") {
-            // Fetch specific if not in active list
+          } else if (orderId !== 'request') {
             const specificRes = await api.get(`/commissions/${orderId}`);
             if (specificRes.data?.isSuccess) {
               setActiveOrder(specificRes.data.data);
-              if (!combined.find((o) => o.id === specificRes.data.data.id)) {
+              if (!combined.find(o => o.id === specificRes.data.data.id)) {
                 setActiveOrders([specificRes.data.data, ...combined]);
               }
             }
           }
         }
       } catch (err) {
-        console.error("Failed to load orders", err);
+        console.error('Failed to load orders', err);
       }
     };
     if (user) fetchOrders();
   }, [user, orderId]);
-
-  const fetchMessages = useCallback(async () => {
-    if (!activeOrder) return;
-    try {
-      const res = await api.get(
-        `/commissions/${activeOrder.id}/messages?pageSize=100`,
-      );
-      if (res.data?.isSuccess) {
-        // Sort messages by CreatedAtUtc
-        const msgs = (res.data.data.items || []).sort(
-          (a: any, b: any) =>
-            new Date(a.createdAtUtc).getTime() -
-            new Date(b.createdAtUtc).getTime(),
-        );
-        setMessages(msgs);
-      }
-    } catch (err) {
-      console.error("Failed to load messages", err);
-    }
-  }, [activeOrder]);
-
-  // Fetch messages when active order changes
-  useEffect(() => {
-    fetchMessages();
-  }, [fetchMessages]);
-
-  // Sync real-time messages via notifications
-  useEffect(() => {
-    if (notifications.length > 0) {
-      const latestNotification = notifications[0];
-      if (
-        latestNotification.type === "CommissionMessage" &&
-        latestNotification.actionUrl?.includes(orderId)
-      ) {
-        fetchMessages();
-      }
-    }
-  }, [notifications, orderId, fetchMessages]);
-
-  // Auto-scroll chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if ((!newMessage.trim() && !attachment) || !activeOrder || isUploading)
-      return;
-
-    try {
-      setIsUploading(true);
-      let attachmentUrl = null;
-      let attachmentType = null;
-
-      if (attachment) {
-        const formData = new FormData();
-        formData.append("file", attachment);
-        const uploadRes = await api.post("/Media/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        if (uploadRes.data?.isSuccess) {
-          attachmentUrl = uploadRes.data.data.url;
-          attachmentType = uploadRes.data.data.type;
-        }
-      }
-      // Request pertama (dengan attachment)
-      const res = await api.post(`/commissions/${activeOrder.id}/messages`, {
-        content: newMessage,
-        attachmentUrl,
-        attachmentType,
-      });
-
-      // Request kedua (tanpa attachment) - Ganti nama variabelnya di sini
-      const resDelivery = await api.post(
-        `/commissions/${activeOrder.id}/messages`,
-        { Content: newMessage },
-      );
-      if (resDelivery.data?.isSuccess) {
-        setMessages([...messages, resDelivery.data.data]);
-        setNewMessage("");
-      }
-    } catch (err) {
-      console.error("Failed to send message", err);
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const handleUpdateStatus = async (status: number) => {
     try {
       await api.patch(`/commissions/${activeOrder.id}/status`, { status });
       setActiveOrder({ ...activeOrder, status });
     } catch (err) {
-      console.error("Failed to update status", err);
+      console.error('Failed to update status', err);
     }
   };
 
   const getStatusColor = (status: number) => {
     switch (status) {
-      case 0:
-        return "text-amber-500 bg-amber-500/10 border-amber-500/20"; // Pending
-      case 1:
-        return "text-blue-500 bg-blue-500/10 border-blue-500/20"; // Accepted
-      case 4:
-        return "text-purple-500 bg-purple-500/10 border-purple-500/20"; // InProgress
-      case 5:
-        return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"; // Completed
-      default:
-        return "text-slate-500 bg-slate-500/10 border-slate-500/20";
+      case 0: return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+      case 1: return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+      case 4: return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
+      case 5: return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
+      default: return 'text-slate-500 bg-slate-500/10 border-slate-500/20';
     }
   };
 
   const getStatusText = (status: number) => {
     switch (status) {
-      case 0:
-        return "Pending";
-      case 1:
-        return "Accepted";
-      case 2:
-        return "Pending Verification";
-      case 3:
-        return "Rejected";
-      case 4:
-        return "In Progress";
-      case 5:
-        return "Completed";
-      case 6:
-        return "Cancelled";
-      default:
-        return "Unknown";
+      case 0: return 'Pending';
+      case 1: return 'Accepted';
+      case 2: return 'Pending Verification';
+      case 3: return 'Rejected';
+      case 4: return 'In Progress';
+      case 5: return 'Completed';
+      case 6: return 'Cancelled';
+      default: return 'Unknown';
     }
   };
 
-  if (!activeOrder)
-    return (
-      <div className="p-12 text-center text-slate-500">
-        Loading workspace...
-      </div>
-    );
+  if (!activeOrder) return <div className="p-12 text-center text-slate-500">Loading workspace...</div>;
 
   const isArtist = user?.id === activeOrder.artistId;
-  const otherPartyUsername = isArtist
-    ? activeOrder.requesterUsername
-    : activeOrder.artistUsername;
-  const otherPartyAvatar = isArtist
-    ? activeOrder.requesterAvatarUrl
-    : activeOrder.artistAvatarUrl;
-  const avatarChar = otherPartyUsername
-    ? otherPartyUsername.charAt(0).toUpperCase()
-    : "U";
+  const otherPartyUsername = isArtist ? activeOrder.requesterUsername : activeOrder.artistUsername;
+  const otherPartyAvatar = isArtist ? activeOrder.requesterAvatarUrl : activeOrder.artistAvatarUrl;
+  const avatarChar = otherPartyUsername ? otherPartyUsername.charAt(0).toUpperCase() : 'U';
 
   return (
     <div className="h-[calc(100vh-80px)] -mt-8 -mx-4 sm:mx-0 sm:mt-0 flex flex-col md:flex-row overflow-hidden bg-slate-50 dark:bg-[#0B1120] border-t border-slate-200 dark:border-white/5">
+      
       {/* LEFT SIDEBAR: Active Orders */}
       <div className="w-full md:w-[20%] border-r border-slate-200 dark:border-white/10 flex flex-col bg-white/50 dark:bg-slate-900/50 backdrop-blur-md z-10 shrink-0">
         <div className="p-6 border-b border-slate-200 dark:border-white/10">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Space_Grotesk'] flex items-center gap-2">
-            <span className="material-symbols-outlined text-indigo-500">
-              list_alt
-            </span>
+            <span className="material-symbols-outlined text-indigo-500">list_alt</span>
             Active Orders
           </h2>
         </div>
-
+        
         <div className="overflow-y-auto flex-1 p-4 space-y-2">
-          {activeOrders.map((order) => (
+          {activeOrders.map(order => (
             <Link
               href={`/commissions/${order.id}`}
               key={order.id}
               className={`block w-full text-left p-4 rounded-2xl transition-all border ${
-                activeOrder.id === order.id
-                  ? "bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 shadow-sm"
-                  : "bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                activeOrder.id === order.id 
+                  ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 shadow-sm' 
+                  : 'bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/50'
               }`}
             >
               <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
-                    {(
-                      (user?.id === order.artistId
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
+                      {(
+                        (user?.id === order.artistId
+                          ? order.requesterUsername
+                          : order.artistUsername) || "U"
+                      )
+                        .charAt(0)
+                        .toUpperCase()}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-slate-900 dark:text-white truncate">
+                      {user?.id === order.artistId
                         ? order.requesterUsername
-                        : order.artistUsername) || "U"
-                    )
-                      .charAt(0)
-                      .toUpperCase()}
+                        : order.artistUsername}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-1">
+                      {order.title}
+                    </p>
+                    <span
+                      className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(order.status)}`}
+                    >
+                      {getStatusText(order.status)}
+                    </span>
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-slate-900 dark:text-white truncate">
-                    {user?.id === order.artistId
-                      ? order.requesterUsername
-                      : order.artistUsername}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-1">
-                    {order.title}
-                  </p>
-                  <span
-                    className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(order.status)}`}
-                  >
-                    {getStatusText(order.status)}
-                  </span>
-                </div>
-              </div>
             </Link>
           ))}
         </div>
       </div>
 
       {/* CENTER: Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white/30 dark:bg-slate-950/30">
-        <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shrink-0 overflow-hidden">
-              {otherPartyAvatar ? (
-                <img
-                  src={otherPartyAvatar}
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                avatarChar
-              )}
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                {otherPartyUsername}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">
-                {activeOrder.title}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          <div className="text-center">
-            <span className="text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/50 px-3 py-1 rounded-full">
-              Order created on{" "}
-              {new Date(activeOrder.createdAtUtc).toLocaleDateString()}
-            </span>
-          </div>
-
-          {messages.map((msg) => {
-            const isUser = msg.senderId === user?.id;
-            return (
-              <div
-                key={msg.id}
-                className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
-              >
-                <div className="flex items-end gap-2 max-w-[85%] lg:max-w-[70%]">
-                  {!isUser && (
-                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-bold text-xs shrink-0 mb-1 overflow-hidden">
-                      {msg.senderAvatarUrl ? (
-                        <img
-                          src={msg.senderAvatarUrl}
-                          alt="avatar"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        msg.senderUsername.charAt(0).toUpperCase()
-                      )}
-                    </div>
-                  )}
-
-                  <div
-                    className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
-                  >
-                    <div
-                      className={`px-4 py-3 rounded-2xl shadow-sm ${
-                        isUser
-                          ? "bg-indigo-600 text-white rounded-br-sm"
-                          : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/5 rounded-bl-sm"
-                      }`}
-                    >
-                      {msg.attachmentUrl && (
-                        <div className="mb-2">
-                          {msg.attachmentType?.startsWith("image/") ? (
-                            <img
-                              src={msg.attachmentUrl}
-                              alt="attachment"
-                              className="max-w-xs max-h-48 rounded-lg object-contain cursor-pointer"
-                              onClick={() =>
-                                window.open(msg.attachmentUrl, "_blank")
-                              }
-                            />
-                          ) : msg.attachmentType?.startsWith("video/") ? (
-                            <video
-                              src={msg.attachmentUrl}
-                              controls
-                              className="max-w-xs max-h-48 rounded-lg object-contain"
-                            />
-                          ) : (
-                            <a
-                              href={msg.attachmentUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="underline flex items-center gap-1"
-                            >
-                              <span className="material-symbols-outlined text-sm">
-                                attach_file
-                              </span>
-                              File
-                            </a>
-                          )}
-                        </div>
-                      )}
-                      <p className="whitespace-pre-wrap text-sm sm:text-base leading-relaxed">
-                        {msg.content}
-                      </p>
-                    </div>
-                    <span className="text-xs text-slate-400 mt-1 px-1">
-                      {new Date(msg.createdAtUtc).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div className="p-4 sm:p-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-white/10">
-          <form onSubmit={handleSendMessage} className="flex flex-col gap-3">
-            {attachment && (
-              <div className="flex items-center gap-2 p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg w-fit">
-                <span className="material-symbols-outlined text-sm">
-                  attach_file
-                </span>
-                <span className="text-sm truncate max-w-[200px]">
-                  {attachment.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setAttachment(null)}
-                  className="hover:text-red-500 transition-colors ml-2"
-                >
-                  <span className="material-symbols-outlined text-sm">
-                    close
-                  </span>
-                </button>
-              </div>
-            )}
-            <div className="flex items-end gap-3">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-3 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 rounded-xl transition-colors shrink-0"
-                disabled={isUploading}
-              >
-                <span className="material-symbols-outlined">attach_file</span>
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    setAttachment(e.target.files[0]);
-                  }
-                }}
-              />
-              <div className="flex-1 relative">
-                <textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage(e);
-                    }
-                  }}
-                  disabled={isUploading}
-                  placeholder="Type a message..."
-                  className="w-full bg-slate-100 dark:bg-slate-950/50 border border-transparent focus:border-indigo-500/50 rounded-2xl py-3 px-5 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all resize-none max-h-32 min-h-[52px]"
-                  rows={1}
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={(!newMessage.trim() && !attachment) || isUploading}
-                className="p-3 bg-indigo-600 disabled:opacity-50 text-white rounded-xl shadow-lg shadow-indigo-500/20 transition-all shrink-0 flex items-center justify-center"
-              >
-                {isUploading ? (
-                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <span className="material-symbols-outlined">send</span>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
+      <div className="flex-1 flex flex-col min-w-0 bg-white/30 dark:bg-slate-950/30 p-4">
+        <CommissionChat 
+          commissionId={activeOrder.id} 
+          mode="fullscreen" 
+        />
       </div>
 
       {/* RIGHT SIDEBAR: Order Details */}
       <div className="w-full md:w-[30%] border-l border-slate-200 dark:border-white/10 flex flex-col bg-white/50 dark:bg-slate-900/50 backdrop-blur-md z-10 shrink-0 overflow-y-auto">
         <div className="p-6 border-b border-slate-200 dark:border-white/10">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Space_Grotesk'] flex items-center gap-2">
-            <span className="material-symbols-outlined text-indigo-500">
-              info
-            </span>
+            <span className="material-symbols-outlined text-indigo-500">info</span>
             Order Details
           </h2>
         </div>
 
         <div className="p-6 space-y-8">
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 font-medium uppercase tracking-wider">
-              Current Status
-            </p>
-            <div
-              className={`p-4 rounded-xl border flex items-center gap-3 ${getStatusColor(activeOrder.status)}`}
-            >
-              <span className="font-bold text-lg">
-                {getStatusText(activeOrder.status)}
-              </span>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 font-medium uppercase tracking-wider">Current Status</p>
+            <div className={`p-4 rounded-xl border flex items-center gap-3 ${getStatusColor(activeOrder.status)}`}>
+              <span className="font-bold text-lg">{getStatusText(activeOrder.status)}</span>
             </div>
-
+            
             <div className="mt-4 px-2">
               <div className="flex justify-between text-xs font-bold text-slate-400">
-                <span
-                  className={
-                    [0, 1, 4, 5].includes(activeOrder.status)
-                      ? "text-indigo-500"
-                      : ""
-                  }
-                >
-                  Start
-                </span>
-                <span
-                  className={
-                    [4, 5].includes(activeOrder.status) ? "text-indigo-500" : ""
-                  }
-                >
-                  Progress
-                </span>
-                <span
-                  className={activeOrder.status === 5 ? "text-indigo-500" : ""}
-                >
-                  Done
-                </span>
+                <span className={[0, 1, 4, 5].includes(activeOrder.status) ? 'text-indigo-500' : ''}>Start</span>
+                <span className={[4, 5].includes(activeOrder.status) ? 'text-indigo-500' : ''}>Progress</span>
+                <span className={activeOrder.status === 5 ? 'text-indigo-500' : ''}>Done</span>
               </div>
               <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 mt-2 rounded-full overflow-hidden">
-                <div
-                  className={`h-full bg-indigo-500 transition-all duration-1000 ${
-                    activeOrder.status === 0
-                      ? "w-[10%]"
-                      : activeOrder.status === 1
-                        ? "w-[30%]"
-                        : activeOrder.status === 4
-                          ? "w-[75%]"
-                          : activeOrder.status === 5
-                            ? "w-[100%]"
-                            : "w-[50%]"
-                  }`}
-                ></div>
+                <div className={`h-full bg-indigo-500 transition-all duration-1000 ${
+                  activeOrder.status === 0 ? 'w-[10%]' : 
+                  activeOrder.status === 1 ? 'w-[30%]' : 
+                  activeOrder.status === 4 ? 'w-[75%]' : 
+                  activeOrder.status === 5 ? 'w-[100%]' : 'w-[50%]'
+                }`}></div>
               </div>
             </div>
           </div>
 
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 font-medium uppercase tracking-wider">
-              Final Price
-            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 font-medium uppercase tracking-wider">Final Price</p>
             <div className="flex items-end justify-between">
-              <span className="text-4xl font-black text-slate-900 dark:text-white">
-                ${activeOrder.price}
-              </span>
+              <span className="text-4xl font-black text-slate-900 dark:text-white">${activeOrder.price}</span>
             </div>
           </div>
 
@@ -548,69 +206,67 @@ export default function Workspace() {
                 Deadline
               </p>
               <div className="bg-slate-100 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-white/5">
-                <p className="font-bold text-slate-900 dark:text-white text-lg">
-                  {new Date(activeOrder.deadlineUtc).toLocaleDateString()}
-                </p>
+                <p className="font-bold text-slate-900 dark:text-white text-lg">{new Date(activeOrder.deadlineUtc).toLocaleDateString()}</p>
               </div>
             </div>
           )}
 
-          <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-            {activeOrder.status === 0 && isArtist ? (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleUpdateStatus(1)}
-                  className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all"
-                >
-                  Accept
-                </button>
-                <button
-                  onClick={() => handleUpdateStatus(3)}
-                  className="flex-1 py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold transition-all"
-                >
-                  Reject
-                </button>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 font-medium uppercase tracking-wider flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm">description</span>
+              Request Details
+            </p>
+            <div className="bg-slate-100 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-white/5 space-y-4">
+              <div>
+                <h4 className="font-bold text-slate-900 dark:text-white">{activeOrder.title}</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 leading-relaxed whitespace-pre-wrap">{activeOrder.description}</p>
               </div>
-            ) : activeOrder.status === 2 && isArtist ? (
-              <button
-                onClick={async () => {
-                  try {
-                    await api.post(`/payments/${activeOrder.id}/verify`);
-                    setActiveOrder({ ...activeOrder, status: 4 });
-                  } catch (err) {
-                    console.error("Failed to verify payment", err);
-                  }
-                }}
-                className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
-              >
-                <span className="material-symbols-outlined">verified</span>
-                Verify Payment Received
-              </button>
-            ) : activeOrder.status === 4 && isArtist ? (
-              <Link
-                href={`/commissions/delivery/${activeOrder.id}`}
-                className="w-full py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
-              >
-                <span className="material-symbols-outlined">inventory_2</span>
-                Deliver Artwork
-              </Link>
-            ) : (activeOrder.status === 1 || activeOrder.status === 2) &&
-              !isArtist ? (
-              <Link
-                href={`/commissions/payment/${activeOrder.id}`}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
-              >
-                <span className="material-symbols-outlined">payments</span>
-                {activeOrder.status === 2
-                  ? "Payment Pending Verification"
-                  : `Pay Now ($${activeOrder.price})`}
-              </Link>
-            ) : (
-              <button className="w-full py-4 bg-slate-200 dark:bg-white/5 text-slate-400 dark:text-slate-500 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined">lock</span>
-                No Action Required
-              </button>
-            )}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 dark:border-white/10 pt-8">
+            <h3 className="font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              {activeOrder.status === 0 && (
+                <>
+                  {isArtist && (
+                    <button onClick={() => handleUpdateStatus(1)} className="w-full px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20">
+                      Accept Order
+                    </button>
+                  )}
+                  <button onClick={() => handleUpdateStatus(3)} className="w-full px-4 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                    Reject Request
+                  </button>
+                </>
+              )}
+              {activeOrder.status === 1 && (
+                <>
+                  {!isArtist && (
+                    <button className="w-full px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+                      <span className="material-symbols-outlined">shopping_cart</span>
+                      Pay Now
+                    </button>
+                  )}
+                  {isArtist && (
+                    <button onClick={() => handleUpdateStatus(4)} className="w-full px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20">
+                      Start Working
+                    </button>
+                  )}
+                </>
+              )}
+              {activeOrder.status === 4 && isArtist && (
+                <button onClick={() => handleUpdateStatus(5)} className="w-full px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+                  <span className="material-symbols-outlined">check_circle</span>
+                  Mark as Completed
+                </button>
+              )}
+              {activeOrder.status === 5 && (
+                <button className="w-full px-4 py-3 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-bold rounded-xl cursor-default">
+                  <span className="material-symbols-outlined inline mr-2 text-emerald-500">verified</span>
+                  Completed Successfully
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

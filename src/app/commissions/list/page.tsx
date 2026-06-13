@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import CommissionChat from '@/components/chat/CommissionChat';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -80,12 +82,12 @@ const getDaysUntilDeadline = (deadlineUtc?: string) => {
 };
 
 // Memoized Commission Card
-interface CommissionCardProps {
+interface CommissionCardProps { onClick: () => void;
   commission: Commission;
   isArtist: boolean;
 }
 
-const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist }) => {
+const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist, onClick }) => {
   const st = STATUS_MAP[c.status] ?? STATUS_MAP[0];
   const otherUser = isArtist ? c.requesterUsername : c.artistUsername;
   const otherAvatar = isArtist ? c.requesterAvatarUrl : c.artistAvatarUrl;
@@ -93,8 +95,7 @@ const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist }) =
   const deadlineUrgent = daysUntilDeadline !== null && daysUntilDeadline <= 3 && c.status === 4;
 
   return (
-    <Link
-      href={`/commissions/${c.id}`}
+    <button onClick={onClick} type="button" 
       className="group block bg-white/70 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-2xl p-5 hover:border-indigo-500/40 dark:hover:border-indigo-500/30 hover:shadow-lg dark:hover:shadow-indigo-900/10 transition-all"
     >
       <div className="flex items-start gap-4">
@@ -198,7 +199,7 @@ const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist }) =
           </div>
         </div>
       )}
-    </Link>
+    </button>
   );
 });
 
@@ -303,16 +304,25 @@ export default function CommissionsListPage() {
 
   const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null);
 
+  const router = useRouter();
+  const [chatMode, setChatMode] = useState<"popup" | "fullscreen">("popup");
+
   return (
     <div className="min-h-screen pb-16 animate-[fadeIn_0.3s_ease-out]">
-      {selectedCommission ? (
-        <CommissionDetailWithChat
-          commission={selectedCommission}
-          isArtist={selectedCommission.artistId === user?.id}
-          onBack={() => setSelectedCommission(null)}
+      {selectedCommission && (
+        <CommissionChat 
+          commissionId={selectedCommission.id} 
+          mode={chatMode}
+          onClose={() => setSelectedCommission(null)}
+          onToggleFullscreen={() => {
+            if (chatMode === "popup") {
+              setChatMode("fullscreen");
+              router.push(`/commissions/${selectedCommission.id}`);
+            }
+          }}
         />
-      ) : (
-        <div className="max-w-6xl mx-auto px-4">
+      )}
+      <div className="max-w-6xl mx-auto px-4">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
             <div>
@@ -465,7 +475,7 @@ export default function CommissionsListPage() {
                   onClick={() => setSelectedCommission(c)}
                   className="w-full text-left"
                 >
-                  <CommissionCard commission={c} isArtist={activeTab === 'received'} />
+                  <CommissionCard key={c.id} commission={c} isArtist={activeTab === 'received'} onClick={() => setSelectedCommission(c)} />
                 </button>
               ))}
             </div>
@@ -478,301 +488,9 @@ export default function CommissionsListPage() {
             </p>
           )}
         </div>
-      )}
     </div>
   );
 }
 
-// Commission Detail with Chat Component
-interface ChatMessage {
-  id: number;
-  senderId: number;
-  senderUsername: string;
-  senderAvatarUrl?: string;
-  content: string;
-  createdAtUtc: string;
-}
 
-interface CommissionDetailWithChatProps {
-  commission: Commission;
-  isArtist: boolean;
-  onBack: () => void;
-}
 
-const CommissionDetailWithChat = memo<CommissionDetailWithChatProps>(
-  ({ commission: c, isArtist, onBack }) => {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [newMessage, setNewMessage] = useState('');
-    const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-    const [isSending, setIsSending] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { user } = useAuth();
-
-    // Fetch messages
-    useEffect(() => {
-      const fetchMessages = async () => {
-        setIsLoadingMessages(true);
-        try {
-          const res = await api.get(`/commissions/${c.id}/messages`);
-          const messagesData = res.data?.data?.items || res.data?.data || [];
-          setMessages(Array.isArray(messagesData) ? messagesData : []);
-        } catch (err) {
-          console.error('Failed to fetch messages', err);
-        } finally {
-          setIsLoadingMessages(false);
-        }
-      };
-      fetchMessages();
-    }, [c.id]);
-
-    // Auto-scroll to latest message
-    useEffect(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-    // Send message
-    const handleSendMessage = useCallback(async () => {
-      if (!newMessage.trim()) return;
-
-      const messageText = newMessage;
-      setNewMessage('');
-
-      try {
-        setIsSending(true);
-        const res = await api.post(`/commissions/${c.id}/messages`, {
-          message: messageText,
-        });
-
-        if (res.data?.data) {
-          setMessages((prev) => [...prev, res.data.data]);
-        }
-      } catch (err) {
-        console.error('Failed to send message', err);
-        setNewMessage(messageText);
-      } finally {
-        setIsSending(false);
-      }
-    }, [newMessage, c.id]);
-
-    const otherUser = isArtist ? c.requesterUsername : c.artistUsername;
-    const otherAvatar = isArtist ? c.requesterAvatarUrl : c.artistAvatarUrl;
-    const st = STATUS_MAP[c.status] ?? STATUS_MAP[0];
-    const daysUntilDeadline = getDaysUntilDeadline(c.deadlineUtc);
-    const deadlineUrgent =
-      daysUntilDeadline !== null && daysUntilDeadline <= 3 && c.status === 4;
-
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
-        {/* Header */}
-        <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-white/10">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <span className="material-symbols-outlined">arrow_back</span>
-              <span className="font-semibold text-slate-900 dark:text-white">Back</span>
-            </button>
-            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold border ${st.color}`}>
-              <span className="material-symbols-outlined text-[16px]">{st.icon}</span>
-              {st.label}
-            </span>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Commission Details - Left Side */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* User Card */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 p-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <Avatar url={otherAvatar} username={otherUser} size={14} />
-                  <div>
-                    <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wide">
-                      {isArtist ? 'Commission from' : 'Commission by'}
-                    </p>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">{otherUser}</h3>
-                  </div>
-                </div>
-              </div>
-
-              {/* Commission Details */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 p-6 space-y-4">
-                <div>
-                  <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wide mb-2">
-                    Title
-                  </p>
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{c.title}</h2>
-                </div>
-
-                <div>
-                  <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wide mb-2">
-                    Description
-                  </p>
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{c.description}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wide mb-2">
-                      Price
-                    </p>
-                    <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                      ${c.price.toFixed(2)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wide mb-2">
-                      Created
-                    </p>
-                    <p className="text-slate-900 dark:text-white font-semibold">
-                      {formatDate(c.createdAtUtc)}
-                    </p>
-                  </div>
-                </div>
-
-                {c.deadlineUtc && (
-                  <div>
-                    <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wide mb-2">
-                      Deadline
-                    </p>
-                    <div
-                      className={`p-3 rounded-xl font-semibold ${
-                        deadlineUrgent
-                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
-                          : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20'
-                      }`}
-                    >
-                      {formatDate(c.deadlineUtc)}{' '}
-                      {deadlineUrgent && daysUntilDeadline !== null && (
-                        <span className="ml-2 text-xs">({daysUntilDeadline}d left)</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {c.completedAtUtc && (
-                  <div>
-                    <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wide mb-2">
-                      Completed
-                    </p>
-                    <p className="text-slate-900 dark:text-white font-semibold">
-                      {formatDate(c.completedAtUtc)}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-2">
-                {isArtist && c.status === 0 && (
-                  <>
-                    <button className="w-full px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">
-                      Accept Commission
-                    </button>
-                    <button className="w-full px-4 py-3 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-bold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
-                      Decline
-                    </button>
-                  </>
-                )}
-                {!isArtist && c.status === 1 && (
-                  <button className="w-full px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined">shopping_cart</span>
-                    Pay Now
-                  </button>
-                )}
-                {c.status === 5 && (
-                  <button className="w-full px-4 py-3 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-bold rounded-xl">
-                    <span className="material-symbols-outlined inline mr-2">check_circle</span>
-                    Completed
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Chat - Right Side */}
-            <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col h-[600px]">
-              {/* Chat Header */}
-              <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4 text-white">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <span className="material-symbols-outlined">chat</span>
-                  Chat with {otherUser}
-                </h3>
-              </div>
-
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50 dark:bg-slate-800/50">
-                {isLoadingMessages ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="animate-spin w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full mx-auto mb-3"></div>
-                      <p className="text-slate-500 dark:text-slate-400">Loading messages...</p>
-                    </div>
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-center">
-                    <p className="text-slate-400">No messages yet. Start the conversation!</p>
-                  </div>
-                ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex gap-3 ${msg.senderId === user?.id ? 'flex-row-reverse' : ''}`}
-                    >
-                      <Avatar url={msg.senderAvatarUrl} username={msg.senderUsername} size={8} />
-                      <div className={`flex-1 ${msg.senderId === user?.id ? 'items-end' : ''} flex flex-col`}>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 px-3">
-                          {msg.senderId === user?.id ? 'You' : msg.senderUsername} •{' '}
-                          {formatRelative(msg.createdAtUtc)}
-                        </p>
-                        <div
-                          className={`max-w-xs px-4 py-2.5 rounded-2xl ${
-                            msg.senderId === user?.id
-                              ? 'bg-indigo-600 text-white rounded-br-none'
-                              : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-bl-none border border-slate-200 dark:border-slate-600'
-                          }`}
-                        >
-                          <p className="text-sm break-words">{msg.content}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Message Input */}
-              <div className="border-t border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-4">
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    placeholder="Type your message..."
-                    className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-slate-400"
-                  />
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={isSending || !newMessage.trim()}
-                    className="px-4 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <span className="material-symbols-outlined">send</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-);
-
-CommissionDetailWithChat.displayName = 'CommissionDetailWithChat';

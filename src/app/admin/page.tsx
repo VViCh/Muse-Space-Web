@@ -22,7 +22,8 @@ export default function AdminPanel() {
     location: '',
     isOnline: true,
     eventUrl: '',
-    bannerUrl: ''
+    bannerUrl: '',
+    type: 0
   });
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -115,7 +116,7 @@ export default function AdminPanel() {
       });
       if (res.data?.isSuccess) {
         setEventMessage({ type: 'success', text: 'Event created successfully!' });
-        setEventForm({ title: '', description: '', startDateUtc: '', endDateUtc: '', location: '', isOnline: true, eventUrl: '', bannerUrl: '' });
+        setEventForm({ title: '', description: '', startDateUtc: '', endDateUtc: '', location: '', isOnline: true, eventUrl: '', bannerUrl: '', type: 0 });
       } else {
         setEventMessage({ type: 'error', text: 'Failed to create event.' });
       }
@@ -289,6 +290,19 @@ export default function AdminPanel() {
           )}
 
           <form onSubmit={handleCreateEvent} className="space-y-5 text-slate-900 dark:text-white">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Event Type *</label>
+              <select 
+                value={eventForm.type} 
+                onChange={e => setEventForm({...eventForm, type: parseInt(e.target.value)})}
+                className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              >
+                <option value={0}>Stream / Online Meeting</option>
+                <option value={1}>Announcement</option>
+                <option value={2}>Campaign</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Event Title *</label>
               <input required type="text" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="E.g., Global Digital Art Expo" />
