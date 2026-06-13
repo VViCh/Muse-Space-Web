@@ -189,7 +189,7 @@ export default function AdminPanel() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-100 dark:bg-slate-950/50 border-b border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 text-sm">
-                    <th className="p-4 font-medium">Artwork</th>
+                    <th className="p-4 font-medium">Target</th>
                     <th className="p-4 font-medium">Reported By</th>
                     <th className="p-4 font-medium">Type</th>
                     <th className="p-4 font-medium">Reason</th>
@@ -200,7 +200,13 @@ export default function AdminPanel() {
                 <tbody>
                   {reports.map((report) => (
                     <tr key={report.id} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-4 font-bold text-slate-900 dark:text-white">{report.artworkTitle}</td>
+                      <td className="p-4 font-bold text-slate-900 dark:text-white">
+                        {report.artworkId ? (
+                          <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm text-slate-400">brush</span> {report.artworkTitle}</span>
+                        ) : (
+                          <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm text-slate-400">person</span> {report.targetUsername}</span>
+                        )}
+                      </td>
                       <td className="p-4 text-slate-600 dark:text-slate-300">{report.reportedByUsername}</td>
                       <td className="p-4">
                         <span className="inline-flex px-2 py-1 rounded bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 text-xs font-bold uppercase">
@@ -220,7 +226,7 @@ export default function AdminPanel() {
                           onClick={() => handleReviewReport(report.id, 'Approved')}
                           className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-xs font-bold transition-colors"
                         >
-                          Approve (Takedown)
+                          {report.artworkId ? 'Approve (Takedown)' : 'Approve (Action)'}
                         </button>
                       </td>
                     </tr>

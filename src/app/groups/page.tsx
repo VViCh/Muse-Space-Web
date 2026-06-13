@@ -21,6 +21,7 @@ export interface EventResponse {
   bannerUrl: string;
   startDateUtc: string;
   location: string;
+  isRsvped?: boolean;
 }
 
 export default function GroupsPage() {
@@ -126,9 +127,17 @@ export default function GroupsPage() {
                 <div className="mt-auto pt-2">
                   <Link
                     href={`/events/${event.id}`}
-                    className="w-full py-2 bg-indigo-600  text-white rounded-lg text-sm font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-colors text-center block"
+                    className={`w-full py-2 rounded-lg text-sm font-bold transition-all text-center flex items-center justify-center gap-2 ${
+                      event.isRsvped 
+                        ? 'bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-500 border border-emerald-200 dark:border-emerald-500/50 hover:bg-emerald-100 dark:hover:bg-emerald-600/30'
+                        : 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:bg-indigo-700'
+                    }`}
                   >
-                    {t('groups.btn_rsvp', 'RSVP Now')}
+                    {event.isRsvped ? (
+                      <><span className="material-symbols-outlined text-[16px]">check_circle</span> {t('groups.btn_view_event', 'View Event')}</>
+                    ) : (
+                      t('groups.btn_rsvp', 'RSVP Now')
+                    )}
                   </Link>
                 </div>
               </div>

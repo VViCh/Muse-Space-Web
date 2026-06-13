@@ -34,6 +34,11 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportType, setReportType] = useState('Inappropriate');
+  const [reportReason, setReportReason] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
   useEffect(() => {
     let isMounted = true;
     const fetchProfile = async () => {
@@ -130,6 +135,13 @@ export default function ProfilePage() {
                   }`}
                 >
                   {profile.isFollowing ? 'Following' : 'Follow'}
+                </button>
+                <button 
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="p-2.5 rounded-xl bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20 transition-all shadow-lg flex items-center justify-center"
+                  title="Report User"
+                >
+                  <span className="material-symbols-outlined text-sm">flag</span>
                 </button>
               </div>
             </div>
@@ -236,6 +248,87 @@ export default function ProfilePage() {
         />
       )}
 
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+              <h3 className="text-xl font-bold font-['Space_Grotesk'] text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-red-500">flag</span>
+                Report User
+              </h3>
+              <button 
+                onClick={() => setIsReportModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Reason for reporting</label>
+                <select 
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
+                >
+                  <option value="Spam">Spam</option>
+                  <option value="Inappropriate">Inappropriate Content</option>
+                  <option value="Harassment">Harassment</option>
+                  <option value="Copyright">Copyright Violation</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Additional details</label>
+                <textarea 
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  placeholder="Please provide more details about why you are reporting this user..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all resize-none"
+                ></textarea>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800/50">
+              <button 
+                onClick={() => setIsReportModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                disabled={!reportReason.trim() || isSubmittingReport}
+                onClick={async () => {
+                  try {
+                    setIsSubmittingReport(true);
+                    await api.post('/reports', {
+                      targetUserId: profile.userId,
+                      reportType: reportType,
+                      reason: reportReason
+                    });
+                    setIsReportModalOpen(false);
+                    setReportReason('');
+                    alert("Report submitted successfully.");
+                  } catch (err) {
+                    console.error(err);
+                    alert("Failed to submit report.");
+                  } finally {
+                    setIsSubmittingReport(false);
+                  }
+                }}
+                className="px-6 py-2.5 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSubmittingReport ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : "Submit Report"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
