@@ -82,12 +82,14 @@ const getDaysUntilDeadline = (deadlineUtc?: string) => {
 };
 
 // Memoized Commission Card
-interface CommissionCardProps { onClick: () => void;
+interface CommissionCardProps {
   commission: Commission;
   isArtist: boolean;
+  onClick: () => void;
+  onPayNow?: () => void;
 }
 
-const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist, onClick }) => {
+const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist, onClick, onPayNow }) => {
   const st = STATUS_MAP[c.status] ?? STATUS_MAP[0];
   const otherUser = isArtist ? c.requesterUsername : c.artistUsername;
   const otherAvatar = isArtist ? c.requesterAvatarUrl : c.artistAvatarUrl;
@@ -95,8 +97,8 @@ const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist, onC
   const deadlineUrgent = daysUntilDeadline !== null && daysUntilDeadline <= 3 && c.status === 4;
 
   return (
-    <button onClick={onClick} type="button" 
-      className="group block bg-white/70 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-2xl p-5 hover:border-indigo-500/40 dark:hover:border-indigo-500/30 hover:shadow-lg dark:hover:shadow-indigo-900/10 transition-all"
+    <div onClick={onClick} role="button" tabIndex={0}
+      className="group block w-full text-left bg-white/70 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-2xl p-5 hover:border-indigo-500/40 dark:hover:border-indigo-500/30 hover:shadow-lg dark:hover:shadow-indigo-900/10 transition-all cursor-pointer"
     >
       <div className="flex items-start gap-4">
         {/* Avatar */}
@@ -164,10 +166,13 @@ const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist, onC
             </span>
           )}
           {!isArtist && c.status === 1 && (
-            <span className="text-xs font-bold text-indigo-500 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20 flex items-center gap-1">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onPayNow?.(); }}
+              className="text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-md shadow-indigo-500/20 transition-colors"
+            >
               <span className="material-symbols-outlined text-[13px]">payments</span>
               Pay now
-            </span>
+            </button>
           )}
           {c.status === 5 && (
             <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
@@ -199,7 +204,7 @@ const CommissionCard = memo<CommissionCardProps>(({ commission: c, isArtist, onC
           </div>
         </div>
       )}
-    </button>
+    </div>
   );
 });
 
@@ -474,7 +479,12 @@ export default function CommissionsListPage() {
                   key={c.id}
                   className="w-full text-left"
                 >
-                  <CommissionCard commission={c} isArtist={activeTab === 'received'} onClick={() => setSelectedCommission(c)} />
+                  <CommissionCard 
+                    commission={c} 
+                    isArtist={activeTab === 'received'} 
+                    onClick={() => setSelectedCommission(c)}
+                    onPayNow={() => router.push(`/commissions/payment/${c.id}`)}
+                  />
                 </div>
               ))}
             </div>
