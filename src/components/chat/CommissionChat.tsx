@@ -48,18 +48,36 @@ export default function CommissionChat({ commissionId, mode, onClose, onToggleFu
     try {
       const res = await api.get(`/commissions/${commissionId}/messages`);
       if (res.data?.isSuccess) {
-        setMessages(res.data.data.items || []);
+        const rawMsgs = res.data.data.items || [];
+        // Reverse because backend returns them descending (newest first)
+        const newMsgs = [...rawMsgs].reverse();
+        
+        setMessages(prev => {
+          // Compare lengths and last message IDs to avoid triggering unnecessary state updates
+          const hasChanged = prev.length !== newMsgs.length || 
+            (prev.length > 0 && newMsgs.length > 0 && prev[prev.length - 1].id !== newMsgs[newMsgs.length - 1].id);
+          
+          return hasChanged ? newMsgs : prev;
+        });
       }
     } catch (err) {
       console.error('Failed to load messages', err);
     }
   }, [commissionId]);
 
+  // Fetch messages initially and setup polling interval
   useEffect(() => {
+    if (!commissionId) return;
     fetchMessages();
-  }, [fetchMessages]);
 
-  // Real-time messages via notifications
+    const interval = setInterval(() => {
+      fetchMessages();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [commissionId, fetchMessages]);
+
+  // Real-time messages via notifications fallback
   useEffect(() => {
     if (!commissionId) return;
     const latestNotif = notifications[0];
@@ -102,7 +120,7 @@ export default function CommissionChat({ commissionId, mode, onClose, onToggleFu
       });
       
       if (res.data?.isSuccess) {
-        setMessages([...messages, res.data.data]);
+        setMessages(prev => [...prev, res.data.data]);
         setNewMessage('');
         setAttachment(null);
       }
