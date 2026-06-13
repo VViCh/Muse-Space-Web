@@ -130,32 +130,60 @@ export default function EventDetails() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none rounded-2xl p-6 sticky top-28">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">{t('events.are_you_going', 'Are you going?')}</h3>
-            <div className="flex -space-x-4 mb-6">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center relative overflow-hidden shadow-sm">
-                  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWmy5Q4ovxN33Th-UGPn98NuvbII0lCPqmH900zYzCXD2mP6WnfsQYg5CyX8rf4tFNtD3EAcK7_vZu3h2MU_Gzi_YsraaLm89EtjkvWOclLf5f7DaiQ6yFiTF5zMb4P_tGqBFSwGcuJdefW5lWWa40l0ig7vMzrnaymQADnuGMjTvqBGxuaz_Ds9JqY1j1zgLWtXElciJZpSH4VQ1En6cYqRdHG1FU-2qPyfeqf01eITZydAYUO7SFxaTcPpAabjipbkR5ZqVqdRs" alt="Attendee" className="w-full h-full object-cover" />
+          {eventData.type === 2 ? (
+            <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none rounded-2xl p-6 sticky top-28">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Campaign Participation</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">
+                To participate in this campaign, read the details in the description. You do not need to RSVP to join.
+              </p>
+              <div className="flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl">
+                <span className="material-symbols-outlined text-indigo-500 text-3xl">campaign</span>
+                <div>
+                  <h4 className="font-bold text-indigo-700 dark:text-indigo-400 text-sm">Open to all</h4>
+                  <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80">Get involved now!</p>
                 </div>
-              ))}
-              <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 z-10 shadow-sm">
-                +{attendeeCount}
               </div>
             </div>
-            
-            <button 
-              onClick={handleRsvp}
-              disabled={isRsvped}
-              className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                isRsvped 
-                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-none' 
-                  : 'bg-indigo-600  text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-[1.02]'
-              }`}>
-              <span className="material-symbols-outlined">{isRsvped ? 'how_to_reg' : 'confirmation_number'}</span> 
-              {isRsvped ? t('events.already_registered', 'You are registered') : t('events.rsvp_now', 'RSVP Now')}
-            </button>
-            <p className="text-center text-slate-500 text-xs mt-4 font-medium">{t('events.free_for_members', 'Free for all members')}</p>
-          </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none rounded-2xl p-6 sticky top-28">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">{t('events.are_you_going', 'Are you going?')}</h3>
+              <div className="flex -space-x-4 mb-6">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center relative overflow-hidden shadow-sm">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWmy5Q4ovxN33Th-UGPn98NuvbII0lCPqmH900zYzCXD2mP6WnfsQYg5CyX8rf4tFNtD3EAcK7_vZu3h2MU_Gzi_YsraaLm89EtjkvWOclLf5f7DaiQ6yFiTF5zMb4P_tGqBFSwGcuJdefW5lWWa40l0ig7vMzrnaymQADnuGMjTvqBGxuaz_Ds9JqY1j1zgLWtXElciJZpSH4VQ1En6cYqRdHG1FU-2qPyfeqf01eITZydAYUO7SFxaTcPpAabjipbkR5ZqVqdRs" alt="Attendee" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+                <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 z-10 shadow-sm">
+                  +{attendeeCount}
+                </div>
+              </div>
+              
+              {isRsvped && eventData.isOnline && eventData.location ? (
+                <a 
+                  href={eventData.location}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02]"
+                >
+                  <span className="material-symbols-outlined">videocam</span> 
+                  Join Meeting / Stream
+                </a>
+              ) : (
+                <button 
+                  onClick={handleRsvp}
+                  disabled={isRsvped}
+                  className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    isRsvped 
+                      ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-none' 
+                      : 'bg-indigo-600  text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-[1.02]'
+                  }`}>
+                  <span className="material-symbols-outlined">{isRsvped ? 'how_to_reg' : 'confirmation_number'}</span> 
+                  {isRsvped ? t('events.already_registered', 'You are registered') : t('events.rsvp_now', 'RSVP Now')}
+                </button>
+              )}
+              <p className="text-center text-slate-500 text-xs mt-4 font-medium">{t('events.free_for_members', 'Free for all members')}</p>
+            </div>
+          )}
         </div>
       </div>
 

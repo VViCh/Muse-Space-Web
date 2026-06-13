@@ -324,15 +324,19 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
-              <input type="checkbox" id="isOnline" checked={eventForm.isOnline} onChange={e => setEventForm({...eventForm, isOnline: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-              <label htmlFor="isOnline" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">This is an online event</label>
-            </div>
+            {eventForm.type !== 2 && (
+              <>
+                <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
+                  <input type="checkbox" id="isOnline" checked={eventForm.isOnline} onChange={e => setEventForm({...eventForm, isOnline: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                  <label htmlFor="isOnline" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">This is an online event</label>
+                </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">{eventForm.isOnline ? 'Stream URL / Link' : 'Physical Location'}</label>
-              <input type="text" value={eventForm.location} onChange={e => setEventForm({...eventForm, location: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder={eventForm.isOnline ? "https://zoom.us/..." : "123 Main St..."} />
-            </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">{eventForm.isOnline ? 'Stream URL / Link' : 'Physical Location'}</label>
+                  <input type="text" value={eventForm.location} onChange={e => setEventForm({...eventForm, location: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder={eventForm.isOnline ? "https://zoom.us/..." : "123 Main St..."} />
+                </div>
+              </>
+            )}
 
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Banner Image</label>
