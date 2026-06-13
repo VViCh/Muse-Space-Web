@@ -45,32 +45,40 @@ The repository follows a clean, component-driven architecture designed for high 
 Features a masonry grid of trending artworks and a draggable tag carousel for seamless filtering.
 <p align="center">
   <a href="https://ibb.co.com/Cp6ZvfHv">
-  <img src="https://i.ibb.co/Cp6ZvfHv/image.png" alt="Landing Page Image" border="0" style="max-width: 700px; width: 100%; height: auto;">
-</a>
+    <img src="https://i.ibb.co/8nbp2H72/image.png" alt="Landing Page Image" border="0" width="700">
+  </a>
 </p>
 
 ### Authentication
 Secure login and registration flows with real-time validation.
 <p align="center">
-  <img src="[INSERT_LOGIN_IMAGE_URL_HERE]" alt="Login Page" width="700">
+  <a href="https://ibb.co.com/r246k5NL">
+    <img src="https://i.ibb.co/qYksBmV4/image.png" alt="Landing Page Image" border="0" width="700">
+  </a>
 </p>
 
 ### Artwork Detail & Infinite Scroll
 Clicking an artwork opens a rich modal with comments, creator details, and an infinite-scrolling masonry grid of similar artworks.
 <p align="center">
-  <img src="[INSERT_ARTWORK_MODAL_IMAGE_URL_HERE]" alt="Artwork Detail Modal" width="700">
+  <a href="https://ibb.co.com/xSSrQmNb">
+    <img src="https://i.ibb.co/TBBN5KsG/image.png" alt="Landing Page Image" border="0" width="700">
+  </a>
 </p>
 
 ### User Profile & Portfolio
 A centralized hub for artists to display their artworks, follower count, and commission availability toggle.
 <p align="center">
-  <img src="[INSERT_PROFILE_IMAGE_URL_HERE]" alt="Profile Page" width="700">
+  <a href="https://ibb.co.com/VcfmHZJd">
+    <img src="https://i.ibb.co/LXV5QWYM/image.png" alt="Landing Page Image" border="0" width="700">
+  </a>
 </p>
 
 ### Commission Requests Dashboard
 A specialized interface for artists to track incoming requests, update statuses (Pending, Accepted, Completed), and communicate with clients.
 <p align="center">
-  <img src="[INSERT_COMMISSION_DASHBOARD_IMAGE_URL_HERE]" alt="Commissions Dashboard" width="700">
+  <a href="https://ibb.co.com/bRFGxN9F">
+    <img src="https://i.ibb.co/HpC90G8C/image.png" alt="Landing Page Image" border="0" width="700">
+  </a>
 </p>
 
 ---
