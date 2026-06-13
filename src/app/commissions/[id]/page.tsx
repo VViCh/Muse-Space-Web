@@ -242,7 +242,10 @@ export default function Workspace() {
               {activeOrder.status === 1 && (
                 <>
                   {!isArtist && (
-                    <button className="w-full px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+                    <button 
+                      onClick={() => router.push(`/commissions/payment/${activeOrder.id}`)}
+                      className="w-full px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                    >
                       <span className="material-symbols-outlined">shopping_cart</span>
                       Pay Now
                     </button>
